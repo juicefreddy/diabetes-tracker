@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Exercise } from '@/lib/types'
 import { getTodayString, formatDate, getExerciseTypeLabel, getTimeOfDayLabel } from '@/lib/utils'
@@ -31,7 +31,9 @@ export default function ExercisePage() {
   const [intensity, setIntensity] = useState<Intensity>('medium')
   const [calories, setCalories] = useState('')
   const [saving, setSaving] = useState(false)
+  const [parsing, setParsing] = useState(false)
   const [toast, setToast] = useState('')
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   // 기록 탭
   const [allRecords, setAllRecords] = useState<Exercise[]>([])
@@ -47,6 +49,37 @@ export default function ExercisePage() {
   useEffect(() => { if (tab === 'records') fetchRecords() }, [tab, fetchRecords])
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 2500) }
+
+  async function handleImageParse(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setParsing(true)
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const base64 = (reader.result as string).split(',')[1]
+      try {
+        const res = await fetch('/api/parse-exercise', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64, mediaType: file.type }),
+        })
+        const data = await res.json()
+        if (data.error) { showToast('파싱 실패. 직접 입력해주세요.'); return }
+        if (data.duration_minutes != null) setDuration(String(data.duration_minutes))
+        if (data.distance_km != null) setDistance(String(data.distance_km))
+        if (data.calories != null) setCalories(String(data.calories))
+        if (data.avg_heart_rate != null) setHeartRate(String(data.avg_heart_rate))
+        if (data.elevation != null) setElevation(String(data.elevation))
+        showToast('자동 입력 완료! 확인 후 저장하세요.')
+      } catch {
+        showToast('파싱 실패. 직접 입력해주세요.')
+      } finally {
+        setParsing(false)
+        e.target.value = ''
+      }
+    }
+    reader.readAsDataURL(file)
+  }
 
   async function handleSave() {
     if (!duration) return
@@ -130,6 +163,16 @@ export default function ExercisePage() {
       {/* ── 입력 탭 ── */}
       {tab === 'input' && (
         <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageParse} />
+          <button
+            onClick={() => imageInputRef.current?.click()}
+            disabled={parsing}
+            className="w-full h-12 border-2 border-dashed border-[#2e6da4] text-[#2e6da4] rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {parsing
+              ? <><span className="w-4 h-4 border-2 border-[#2e6da4] border-t-transparent rounded-full animate-spin" />분석 중...</>
+              : '📷 운동 기록 사진으로 자동 입력'}
+          </button>
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">날짜</label>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
