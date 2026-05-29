@@ -77,8 +77,8 @@ export default function DashboardPage() {
       setAiAnalysis(result)
       // DB에 저장 (날짜별 1개, upsert)
       await supabase.from('daily_analysis').upsert({ date: selectedDate, analysis: result }, { onConflict: 'date' })
-    } catch {
-      setAiAnalysis('AI 분석 중 오류가 발생했습니다.')
+    } catch (e) {
+      setAiAnalysis('fetch 오류: ' + String(e))
     } finally {
       setAnalyzing(false)
     }
