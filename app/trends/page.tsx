@@ -16,31 +16,41 @@ export default function TrendsPage() {
   const [postprandialData, setPostprandialData] = useState<ChartPoint[]>([])
   const [exerciseData, setExerciseData] = useState<ExercisePoint[]>([])
   const [loading, setLoading] = useState(true)
+  const [period, setPeriod] = useState<'30' | '90' | 'all'>('all')
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [period])
 
   async function fetchData() {
     setLoading(true)
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29)
-    const from = thirtyDaysAgo.toISOString().split('T')[0]
 
-    const [glucoseRes, exerciseRes] = await Promise.all([
-      supabase.from('blood_glucose').select('date, time_point, value').gte('date', from).order('date'),
-      supabase.from('exercise').select('date, duration_minutes').gte('date', from).order('date'),
-    ])
+    let glucoseQuery = supabase.from('blood_glucose').select('date, time_point, value').order('date')
+    let exerciseQuery = supabase.from('exercise').select('date, duration_minutes').order('date')
+
+    if (period !== 'all') {
+      const from = new Date()
+      from.setDate(from.getDate() - Number(period))
+      const fromStr = from.toISOString().split('T')[0]
+      glucoseQuery = glucoseQuery.gte('date', fromStr)
+      exerciseQuery = exerciseQuery.gte('date', fromStr)
+    }
+
+    const [glucoseRes, exerciseRes] = await Promise.all([glucoseQuery, exerciseQuery])
 
     const glucoseRaw = (glucoseRes.data ?? []) as { date: string; time_point: string; value: number }[]
     const exerciseRaw = (exerciseRes.data ?? []) as { date: string; duration_minutes: number }[]
 
-    // 날짜 배열 생성
+    // 데이터 범위 기반 날짜 배열 생성
+    const allDates = [...glucoseRaw.map(g => g.date), ...exerciseRaw.map(e => e.date)]
+    const minDate = allDates.length > 0 ? allDates.reduce((a, b) => a < b ? a : b) : new Date().toISOString().split('T')[0]
+    const maxDate = new Date().toISOString().split('T')[0]
     const dates: string[] = []
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      dates.push(d.toISOString().split('T')[0])
+    const cur = new Date(minDate)
+    const end = new Date(maxDate)
+    while (cur <= end) {
+      dates.push(cur.toISOString().split('T')[0])
+      cur.setDate(cur.getDate() + 1)
     }
 
     // 공복혈당 그룹핑
@@ -98,6 +108,14 @@ export default function TrendsPage() {
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
       <h1 className="text-xl font-bold text-gray-800">📊 트렌드 분석</h1>
+      <div className="flex gap-2">
+        {([['30', '30일'], ['90', '90일'], ['all', '전체']] as const).map(([val, label]) => (
+          <button key={val} onClick={() => setPeriod(val)}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium ${period === val ? 'bg-[#2e6da4] text-white' : 'bg-white text-gray-500 shadow-sm'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
 
       {/* 통계 카드 */}
       {loading ? (
