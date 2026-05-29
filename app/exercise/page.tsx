@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Exercise } from '@/lib/types'
 import { getTodayString, formatDate, getExerciseTypeLabel, getTimeOfDayLabel } from '@/lib/utils'
+import type { WorkoutData } from '@/lib/parseWorkoutImage'
 
 const EXERCISE_TYPES = ['walking', 'stepper', 'band', 'cycling', 'other'] as const
 const TIME_OF_DAY = ['morning', 'after_lunch', 'after_dinner', 'evening'] as const
@@ -54,31 +55,22 @@ export default function ExercisePage() {
     const file = e.target.files?.[0]
     if (!file) return
     setParsing(true)
-    const reader = new FileReader()
-    reader.onload = async () => {
-      const base64 = (reader.result as string).split(',')[1]
-      try {
-        const res = await fetch('/api/parse-exercise', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64, mediaType: file.type }),
-        })
-        const data = await res.json()
-        if (data.error) { showToast('파싱 실패. 직접 입력해주세요.'); return }
-        if (data.duration_minutes != null) setDuration(String(data.duration_minutes))
-        if (data.distance_km != null) setDistance(String(data.distance_km))
-        if (data.calories != null) setCalories(String(data.calories))
-        if (data.avg_heart_rate != null) setHeartRate(String(data.avg_heart_rate))
-        if (data.elevation != null) setElevation(String(data.elevation))
-        showToast('자동 입력 완료! 확인 후 저장하세요.')
-      } catch {
-        showToast('파싱 실패. 직접 입력해주세요.')
-      } finally {
-        setParsing(false)
-        e.target.value = ''
-      }
+    try {
+      const { parseWorkoutImage } = await import('@/lib/parseWorkoutImage')
+      const data: WorkoutData = await parseWorkoutImage(file)
+      if (data.duration_minutes != null) setDuration(String(data.duration_minutes))
+      if (data.distance_km != null) setDistance(String(data.distance_km))
+      if (data.calories != null) setCalories(String(data.calories))
+      if (data.avg_heart_rate != null) setHeartRate(String(data.avg_heart_rate))
+      if (data.elevation != null) setElevation(String(data.elevation))
+      const filled = Object.values(data).filter(v => v != null).length
+      showToast(filled > 0 ? `자동 입력 완료! (${filled}개 항목)` : '인식된 데이터가 없습니다. 직접 입력해주세요.')
+    } catch {
+      showToast('이미지 읽기 실패. 직접 입력해주세요.')
+    } finally {
+      setParsing(false)
+      e.target.value = ''
     }
-    reader.readAsDataURL(file)
   }
 
   async function handleSave() {
