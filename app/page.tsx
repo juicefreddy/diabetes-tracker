@@ -69,6 +69,10 @@ export default function DashboardPage() {
         body: JSON.stringify({ date: selectedDate, glucose, meals, exercise }),
       })
       const data = await res.json()
+      if (!res.ok) {
+        setAiAnalysis(`오류: ${data.error ?? res.status}\n${JSON.stringify(data.detail ?? '')}`)
+        return
+      }
       const result = data.analysis ?? '분석 실패'
       setAiAnalysis(result)
       // DB에 저장 (날짜별 1개, upsert)

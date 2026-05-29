@@ -36,15 +36,23 @@ export async function POST(req: NextRequest) {
 🏃 운동 효과
 💡 내일을 위한 추천 (3가지)`
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
-    system: systemPrompt,
-    messages: [{
-      role: 'user',
-      content: `날짜: ${date}\n\n혈당:\n${glucoseSummary}\n\n식단:\n${mealSummary}\n\n운동:\n${exerciseSummary}`
-    }]
-  })
-
-  return NextResponse.json({ analysis: (message.content[0] as { text: string }).text })
+  try {
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      system: systemPrompt,
+      messages: [{
+        role: 'user',
+        content: `날짜: ${date}\n\n혈당:\n${glucoseSummary}\n\n식단:\n${mealSummary}\n\n운동:\n${exerciseSummary}`
+      }]
+    })
+    return NextResponse.json({ analysis: (message.content[0] as { text: string }).text })
+  } catch (e: unknown) {
+    const err = e as { status?: number; message?: string; error?: unknown }
+    console.error('Anthropic API error:', err)
+    return NextResponse.json(
+      { error: err.message ?? String(e), status: err.status, detail: err.error },
+      { status: 500 }
+    )
+  }
 }
