@@ -37,21 +37,10 @@ export default function ExercisePage() {
   const [allRecords, setAllRecords] = useState<Exercise[]>([])
   const [loadingRecords, setLoadingRecords] = useState(false)
   const [editing, setEditing] = useState<EditState | null>(null)
-  // 날짜별 AI 분석
-  const [analysisMap, setAnalysisMap] = useState<Record<string, string>>({})
-
   const fetchRecords = useCallback(async () => {
     setLoadingRecords(true)
-    const [exRes, analysisRes] = await Promise.all([
-      supabase.from('exercise').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }),
-      supabase.from('daily_analysis').select('date, analysis'),
-    ])
-    setAllRecords((exRes.data as Exercise[]) ?? [])
-    const map: Record<string, string> = {}
-    for (const row of (analysisRes.data ?? []) as { date: string; analysis: string }[]) {
-      map[row.date] = row.analysis
-    }
-    setAnalysisMap(map)
+    const { data } = await supabase.from('exercise').select('*').order('date', { ascending: false }).order('created_at', { ascending: false })
+    setAllRecords((data as Exercise[]) ?? [])
     setLoadingRecords(false)
   }, [])
 
@@ -276,15 +265,6 @@ export default function ExercisePage() {
                   </div>
                 ))}
 
-                {/* 해당 날짜 AI 분석 */}
-                {analysisMap[d] && (
-                  <details className="mt-1">
-                    <summary className="text-xs text-purple-600 font-medium cursor-pointer">🤖 AI 하루 분석 보기</summary>
-                    <div className="mt-2 bg-purple-50 rounded-xl p-3">
-                      <p className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">{analysisMap[d]}</p>
-                    </div>
-                  </details>
-                )}
               </div>
             ))
           )}

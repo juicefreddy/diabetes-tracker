@@ -31,7 +31,8 @@ export default function TrendsPage() {
     if (period !== 'all') {
       const from = new Date()
       from.setDate(from.getDate() - Number(period))
-      const fromStr = from.toISOString().split('T')[0]
+      const y = from.getFullYear(), mo = String(from.getMonth() + 1).padStart(2, '0'), dy = String(from.getDate()).padStart(2, '0')
+      const fromStr = `${y}-${mo}-${dy}`
       glucoseQuery = glucoseQuery.gte('date', fromStr)
       exerciseQuery = exerciseQuery.gte('date', fromStr)
     }
@@ -43,13 +44,15 @@ export default function TrendsPage() {
 
     // 데이터 범위 기반 날짜 배열 생성
     const allDates = [...glucoseRaw.map(g => g.date), ...exerciseRaw.map(e => e.date)]
-    const minDate = allDates.length > 0 ? allDates.reduce((a, b) => a < b ? a : b) : new Date().toISOString().split('T')[0]
-    const maxDate = new Date().toISOString().split('T')[0]
+    const today = new Date()
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    const minDate = allDates.length > 0 ? allDates.reduce((a, b) => a < b ? a : b) : todayStr
+    const maxDate = todayStr
     const dates: string[] = []
-    const cur = new Date(minDate)
-    const end = new Date(maxDate)
+    const cur = new Date(minDate + 'T12:00:00')
+    const end = new Date(maxDate + 'T12:00:00')
     while (cur <= end) {
-      dates.push(cur.toISOString().split('T')[0])
+      dates.push(`${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`)
       cur.setDate(cur.getDate() + 1)
     }
 
