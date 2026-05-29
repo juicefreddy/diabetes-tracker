@@ -167,7 +167,7 @@ export default function ExercisePage() {
             ].map(({ label, val, set, ph }) => (
               <div key={label}>
                 <label className="block text-xs text-gray-500 mb-1">{label}</label>
-                <input type="number" inputMode="numeric" value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                <input type="number" inputMode="decimal" value={val} onChange={e => set(e.target.value)} placeholder={ph}
                   className="w-full h-12 border border-gray-200 rounded-xl px-3 text-gray-800 focus:outline-none focus:border-[#2e6da4]" />
               </div>
             ))}
@@ -228,7 +228,7 @@ export default function ExercisePage() {
                           ].map(({ label, key }) => (
                             <div key={key}>
                               <label className="text-xs text-gray-500">{label}</label>
-                              <input type="number" inputMode="numeric"
+                              <input type="number" inputMode="decimal"
                                 value={editing![key as keyof EditState]}
                                 onChange={e => setEditing(p => p ? { ...p, [key]: e.target.value } : null)}
                                 className="w-full h-9 border border-gray-200 rounded-lg px-2 text-sm focus:outline-none" />
