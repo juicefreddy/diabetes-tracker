@@ -1,5 +1,5 @@
 export interface BloodGlucose {
-  id?: string
+  id: string
   date: string
   time_point: 'fasting' | 'after_breakfast' | 'after_lunch' | 'after_dinner' | 'bedtime'
   value: number
@@ -20,7 +20,7 @@ export interface Meal {
 }
 
 export interface Exercise {
-  id?: string
+  id: string
   date: string
   type: 'walking' | 'stepper' | 'band' | 'cycling' | 'other'
   time_of_day: 'morning' | 'after_lunch' | 'after_dinner' | 'evening'

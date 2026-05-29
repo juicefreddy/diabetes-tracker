@@ -69,13 +69,22 @@ export default function DashboardPage() {
         body: JSON.stringify({ date: selectedDate, glucose, meals, exercise }),
       })
       const data = await res.json()
-      setAiAnalysis(data.analysis ?? '분석 실패')
+      const result = data.analysis ?? '분석 실패'
+      setAiAnalysis(result)
+      // DB에 저장 (날짜별 1개, upsert)
+      await supabase.from('daily_analysis').upsert({ date: selectedDate, analysis: result }, { onConflict: 'date' })
     } catch {
       setAiAnalysis('AI 분석 중 오류가 발생했습니다.')
     } finally {
       setAnalyzing(false)
     }
   }
+
+  // 기존 저장된 분석 불러오기
+  useEffect(() => {
+    supabase.from('daily_analysis').select('analysis').eq('date', selectedDate).single()
+      .then(({ data }) => { if (data) setAiAnalysis(data.analysis) })
+  }, [selectedDate])
 
   const totalExerciseMin = exercise.reduce((sum, e) => sum + e.duration_minutes, 0)
   const timePoints = ['fasting', 'after_breakfast', 'after_lunch', 'after_dinner'] as const

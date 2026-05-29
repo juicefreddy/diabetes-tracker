@@ -54,14 +54,20 @@ export default function MealsPage() {
   const [editFoods, setEditFoods] = useState<string[]>([])
   const [editFoodInput, setEditFoodInput] = useState('')
 
+  const [analysisMap, setAnalysisMap] = useState<Record<string, string>>({})
+
   const fetchRecords = useCallback(async () => {
     setRecordsLoading(true)
-    const { data } = await supabase
-      .from('meals')
-      .select('*')
-      .order('date', { ascending: false })
-      .order('created_at', { ascending: false })
-    setRecords((data as MealRecord[]) ?? [])
+    const [mealsRes, analysisRes] = await Promise.all([
+      supabase.from('meals').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }),
+      supabase.from('daily_analysis').select('date, analysis'),
+    ])
+    setRecords((mealsRes.data as MealRecord[]) ?? [])
+    const map: Record<string, string> = {}
+    for (const row of (analysisRes.data ?? []) as { date: string; analysis: string }[]) {
+      map[row.date] = row.analysis
+    }
+    setAnalysisMap(map)
     setRecordsLoading(false)
   }, [])
 
@@ -351,15 +357,28 @@ export default function MealsPage() {
                   </div>
                 )}
 
-                {/* AI 분석 결과 */}
+                {/* 식단별 AI 분석 */}
                 {record.ai_analysis && (
-                  <details className="text-xs text-gray-500">
-                    <summary className="cursor-pointer text-purple-600 font-medium">🤖 AI 분석 보기</summary>
-                    <p className="mt-2 text-gray-600 whitespace-pre-wrap leading-relaxed">{record.ai_analysis}</p>
+                  <details>
+                    <summary className="text-xs cursor-pointer text-purple-600 font-medium">🤖 식단 AI 분석 보기</summary>
+                    <p className="mt-2 text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">{record.ai_analysis}</p>
                   </details>
                 )}
               </div>
             ))
+          )}
+
+          {/* 날짜별 하루 AI 분석 요약 */}
+          {!recordsLoading && Object.keys(analysisMap).length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-gray-600">🤖 AI 하루 분석 기록</p>
+              {Object.entries(analysisMap).sort(([a], [b]) => b.localeCompare(a)).map(([d, analysis]) => (
+                <details key={d} className="bg-white rounded-2xl shadow-sm p-4">
+                  <summary className="text-sm font-medium text-purple-700 cursor-pointer">{d}</summary>
+                  <p className="mt-3 text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">{analysis}</p>
+                </details>
+              ))}
+            </div>
           )}
         </div>
       )}
