@@ -31,11 +31,16 @@ interface MealRecord {
   tomato_check: boolean
   meal_order_check: boolean
   ai_analysis: string | null
+  created_at?: string
 }
 
 export default function MealsPage() {
   const [tab, setTab] = useState<'input' | 'records'>('input')
   const [date, setDate] = useState(getTodayString())
+  const [mealTime, setMealTime] = useState(() => {
+    const n = new Date()
+    return `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`
+  })
   const [mealType, setMealType] = useState<MealType>('breakfast')
   const [tomatoCheck, setTomatoCheck] = useState(false)
   const [mealOrderCheck, setMealOrderCheck] = useState(false)
@@ -78,9 +83,15 @@ export default function MealsPage() {
     setFoods((prev) => prev.filter((_, i) => i !== idx))
   }
 
+  function formatTime(iso?: string) {
+    if (!iso) return ''
+    return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+  }
+
   async function handleSave() {
     if (foods.length === 0) return
     setSaving(true)
+    const createdAt = new Date(`${date}T${mealTime}:00`).toISOString()
     const { error } = await supabase.from('meals').insert({
       date,
       meal_type: mealType,
@@ -89,6 +100,7 @@ export default function MealsPage() {
       tomato_check: tomatoCheck,
       meal_order_check: mealOrderCheck,
       ai_analysis: null,
+      created_at: createdAt,
     })
     setSaving(false)
     if (!error) {
@@ -162,9 +174,13 @@ export default function MealsPage() {
       {tab === 'input' && (
         <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">날짜</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-              className="w-full h-12 border border-gray-200 rounded-xl px-3 text-gray-800 focus:outline-none focus:border-[#2e6da4]" />
+            <label className="block text-sm font-medium text-gray-600 mb-1">날짜 / 식사 시간</label>
+            <div className="flex gap-2">
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+                className="flex-1 border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#2e6da4]" />
+              <input type="time" value={mealTime} onChange={(e) => setMealTime(e.target.value)}
+                className="w-28 border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#2e6da4]" />
+            </div>
           </div>
 
           <div>
@@ -250,6 +266,7 @@ export default function MealsPage() {
                       {mealLabel(record.meal_type)}
                     </span>
                     <span className="text-sm font-semibold text-gray-700">{record.date}</span>
+                    {record.created_at && <span className="text-xs text-gray-400">{formatTime(record.created_at)}</span>}
                   </div>
                   <div className="flex gap-2">
                     {editingId !== record.id && (
