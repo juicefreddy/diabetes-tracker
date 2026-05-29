@@ -19,9 +19,6 @@ export default function DashboardPage() {
   const [meals, setMeals] = useState<MealRecord[]>([])
   const [chartData, setChartData] = useState<ChartPoint[]>([])
   const [loading, setLoading] = useState(true)
-  const [aiAnalysis, setAiAnalysis] = useState('')
-  const [analyzing, setAnalyzing] = useState(false)
-
   const isToday = selectedDate === getTodayString()
 
   function getDateDaysAgo(days: number) {
@@ -32,7 +29,6 @@ export default function DashboardPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    setAiAnalysis('')
     const [glucoseRes, exerciseRes, mealsRes, chartRes] = await Promise.all([
       supabase.from('blood_glucose').select('*').eq('date', selectedDate).order('created_at'),
       supabase.from('exercise').select('*').eq('date', selectedDate),
@@ -58,37 +54,6 @@ export default function DashboardPage() {
   }, [selectedDate])
 
   useEffect(() => { fetchData() }, [fetchData])
-
-  async function handleAiAnalysis() {
-    setAnalyzing(true)
-    setAiAnalysis('')
-    try {
-      const res = await fetch('/api/daily-analysis', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: selectedDate, glucose, meals, exercise }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setAiAnalysis(`오류: ${data.error ?? res.status}\n${JSON.stringify(data.detail ?? '')}`)
-        return
-      }
-      const result = data.analysis ?? '분석 실패'
-      setAiAnalysis(result)
-      // DB에 저장 (날짜별 1개, upsert)
-      await supabase.from('daily_analysis').upsert({ date: selectedDate, analysis: result }, { onConflict: 'date' })
-    } catch (e) {
-      setAiAnalysis('fetch 오류: ' + String(e))
-    } finally {
-      setAnalyzing(false)
-    }
-  }
-
-  // 기존 저장된 분석 불러오기
-  useEffect(() => {
-    supabase.from('daily_analysis').select('analysis').eq('date', selectedDate).single()
-      .then(({ data }) => { if (data) setAiAnalysis(data.analysis) })
-  }, [selectedDate])
 
   const totalExerciseMin = exercise.reduce((sum, e) => sum + e.duration_minutes, 0)
   const timePoints = ['fasting', 'after_breakfast', 'after_lunch', 'after_dinner'] as const
@@ -189,36 +154,6 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
-      </div>
-
-      {/* AI 일일 분석 */}
-      <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-600">🤖 AI 일일 분석</h2>
-          {aiAnalysis && !analyzing && (
-            <button onClick={() => setAiAnalysis('')} className="text-xs text-gray-400">닫기</button>
-          )}
-        </div>
-        {!aiAnalysis && !analyzing && (
-          <button onClick={handleAiAnalysis}
-            className="w-full h-12 bg-gradient-to-r from-purple-600 to-[#2e6da4] text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2">
-            ✨ {selectedDate} 하루 분석 요청
-          </button>
-        )}
-        {analyzing && (
-          <div className="space-y-2 py-2">
-            <div className="flex items-center gap-2 text-purple-600 text-sm font-medium">
-              <span className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
-              AI가 하루를 분석하고 있습니다...
-            </div>
-            {[0,1,2,3].map((i) => <div key={i} className="h-4 bg-purple-50 rounded animate-pulse" />)}
-          </div>
-        )}
-        {aiAnalysis && !analyzing && (
-          <div className="bg-purple-50 rounded-xl p-4">
-            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{aiAnalysis}</p>
-          </div>
-        )}
       </div>
 
       {/* 7일 차트 */}

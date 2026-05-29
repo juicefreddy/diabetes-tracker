@@ -42,8 +42,6 @@ export default function MealsPage() {
   const [riceAmount, setRiceAmount] = useState<RiceAmount>('none')
   const [foodInput, setFoodInput] = useState('')
   const [foods, setFoods] = useState<string[]>([])
-  const [aiAnalysis, setAiAnalysis] = useState('')
-  const [analyzing, setAnalyzing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
 
@@ -54,20 +52,10 @@ export default function MealsPage() {
   const [editFoods, setEditFoods] = useState<string[]>([])
   const [editFoodInput, setEditFoodInput] = useState('')
 
-  const [analysisMap, setAnalysisMap] = useState<Record<string, string>>({})
-
   const fetchRecords = useCallback(async () => {
     setRecordsLoading(true)
-    const [mealsRes, analysisRes] = await Promise.all([
-      supabase.from('meals').select('*').order('date', { ascending: false }).order('created_at', { ascending: false }),
-      supabase.from('daily_analysis').select('date, analysis'),
-    ])
-    setRecords((mealsRes.data as MealRecord[]) ?? [])
-    const map: Record<string, string> = {}
-    for (const row of (analysisRes.data ?? []) as { date: string; analysis: string }[]) {
-      map[row.date] = row.analysis
-    }
-    setAnalysisMap(map)
+    const { data } = await supabase.from('meals').select('*').order('date', { ascending: false }).order('created_at', { ascending: false })
+    setRecords((data as MealRecord[]) ?? [])
     setRecordsLoading(false)
   }, [])
 
@@ -90,29 +78,6 @@ export default function MealsPage() {
     setFoods((prev) => prev.filter((_, i) => i !== idx))
   }
 
-  async function handleAnalyze() {
-    if (foods.length === 0) return
-    setAnalyzing(true)
-    setAiAnalysis('')
-    try {
-      const res = await fetch('/api/analyze-meal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          foods,
-          mealType: MEAL_TYPES.find((m) => m.value === mealType)?.label,
-          date,
-        }),
-      })
-      const data = await res.json()
-      setAiAnalysis(data.analysis ?? '분석 실패')
-    } catch {
-      setAiAnalysis('AI 분석 중 오류가 발생했습니다.')
-    } finally {
-      setAnalyzing(false)
-    }
-  }
-
   async function handleSave() {
     if (foods.length === 0) return
     setSaving(true)
@@ -123,12 +88,11 @@ export default function MealsPage() {
       rice_amount: riceAmount,
       tomato_check: tomatoCheck,
       meal_order_check: mealOrderCheck,
-      ai_analysis: aiAnalysis || null,
+      ai_analysis: null,
     })
     setSaving(false)
     if (!error) {
       setFoods([])
-      setAiAnalysis('')
       setTomatoCheck(false)
       setMealOrderCheck(false)
       showToast('저장되었습니다!')
@@ -260,20 +224,6 @@ export default function MealsPage() {
             )}
           </div>
 
-          <button onClick={handleAnalyze} disabled={analyzing || foods.length === 0}
-            className="w-full h-12 bg-purple-600 text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
-            {analyzing ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />AI 분석 중...</> : '🤖 AI 식단 분석 요청'}
-          </button>
-
-          {(analyzing || aiAnalysis) && (
-            <div className="bg-purple-50 rounded-xl p-4">
-              <p className="text-xs font-semibold text-purple-600 mb-2">AI 분석 결과</p>
-              {analyzing
-                ? <div className="space-y-2">{[0,1,2].map((i) => <div key={i} className="h-4 bg-purple-100 rounded animate-pulse" />)}</div>
-                : <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{aiAnalysis}</p>}
-            </div>
-          )}
-
           <button onClick={handleSave} disabled={saving || foods.length === 0}
             className="w-full h-12 bg-[#2e6da4] text-white rounded-xl font-semibold text-base disabled:opacity-50 flex items-center justify-center gap-2">
             {saving ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />저장 중...</> : '저장하기'}
@@ -357,29 +307,10 @@ export default function MealsPage() {
                   </div>
                 )}
 
-                {/* 식단별 AI 분석 */}
-                {record.ai_analysis && (
-                  <details>
-                    <summary className="text-xs cursor-pointer text-purple-600 font-medium">🤖 식단 AI 분석 보기</summary>
-                    <p className="mt-2 text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">{record.ai_analysis}</p>
-                  </details>
-                )}
               </div>
             ))
           )}
 
-          {/* 날짜별 하루 AI 분석 요약 */}
-          {!recordsLoading && Object.keys(analysisMap).length > 0 && (
-            <div className="space-y-3">
-              <p className="text-sm font-semibold text-gray-600">🤖 AI 하루 분석 기록</p>
-              {Object.entries(analysisMap).sort(([a], [b]) => b.localeCompare(a)).map(([d, analysis]) => (
-                <details key={d} className="bg-white rounded-2xl shadow-sm p-4">
-                  <summary className="text-sm font-medium text-purple-700 cursor-pointer">{d}</summary>
-                  <p className="mt-3 text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">{analysis}</p>
-                </details>
-              ))}
-            </div>
-          )}
         </div>
       )}
     </div>
