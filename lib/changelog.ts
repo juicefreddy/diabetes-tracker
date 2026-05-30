@@ -8,9 +8,20 @@ export interface ChangelogEntry {
   items: string[]
 }
 
-export const CURRENT_VERSION = 'v1.4.1'
+export const CURRENT_VERSION = 'v1.4.2'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.4.2',
+    date: '2026-05-30 10:30',
+    type: 'fix',
+    title: '시간 저장 오류 근본 수정',
+    items: [
+      '브라우저 Intl API 미지원으로 발생하던 9시간 오차 완전 해결',
+      '타임존 계산을 고정 UTC 오프셋 산술 방식으로 교체 (브라우저 호환성 문제 제거)',
+      '서울(UTC+9) 기준 09:17 입력 시 정확히 00:17 UTC로 저장됨',
+    ],
+  },
   {
     version: 'v1.4.1',
     date: '2026-05-30 09:56',
