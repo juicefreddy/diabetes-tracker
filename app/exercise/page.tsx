@@ -85,11 +85,11 @@ export default function ExercisePage() {
     setSaving(true)
     const { error } = await supabase.from('exercise').insert({
       date, type, time_of_day: timeOfDay,
-      duration_minutes: Number(duration),
+      duration_minutes: Math.round(Number(duration)),
       distance_km: distance ? Number(distance) : null,
-      avg_heart_rate: heartRate ? Number(heartRate) : null,
-      elevation: elevation ? Number(elevation) : null,
-      intensity, calories: calories ? Number(calories) : null,
+      avg_heart_rate: heartRate ? Math.round(Number(heartRate)) : null,
+      elevation: elevation ? Math.round(Number(elevation)) : null,
+      intensity, calories: calories ? Math.round(Number(calories)) : null,
       created_at: new Date().toISOString(),
     })
     setSaving(false)
@@ -115,11 +115,11 @@ export default function ExercisePage() {
     if (!editing) return
     const { error } = await supabase.from('exercise').update({
       type: editing.type, time_of_day: editing.time_of_day,
-      duration_minutes: Number(editing.duration_minutes),
+      duration_minutes: Math.round(Number(editing.duration_minutes)),
       distance_km: editing.distance_km ? Number(editing.distance_km) : null,
-      avg_heart_rate: editing.avg_heart_rate ? Number(editing.avg_heart_rate) : null,
-      elevation: editing.elevation ? Number(editing.elevation) : null,
-      calories: editing.calories ? Number(editing.calories) : null,
+      avg_heart_rate: editing.avg_heart_rate ? Math.round(Number(editing.avg_heart_rate)) : null,
+      elevation: editing.elevation ? Math.round(Number(editing.elevation)) : null,
+      calories: editing.calories ? Math.round(Number(editing.calories)) : null,
       intensity: editing.intensity,
     }).eq('id', editing.id)
     if (!error) {
@@ -202,15 +202,15 @@ export default function ExercisePage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: '운동 시간 (분) *', val: duration, set: setDuration, ph: '30' },
-              { label: '거리 (km)', val: distance, set: setDistance, ph: '3.5' },
-              { label: '평균심박수 (bpm)', val: heartRate, set: setHeartRate, ph: '120' },
-              { label: '고도 (m)', val: elevation, set: setElevation, ph: '50' },
-              { label: '칼로리 (kcal)', val: calories, set: setCalories, ph: '200' },
-            ].map(({ label, val, set, ph }) => (
+              { label: '운동 시간 (분) *', val: duration, set: setDuration, ph: '30', decimal: false },
+              { label: '거리 (km)', val: distance, set: setDistance, ph: '3.5', decimal: true },
+              { label: '평균심박수 (bpm)', val: heartRate, set: setHeartRate, ph: '120', decimal: false },
+              { label: '고도 (m)', val: elevation, set: setElevation, ph: '50', decimal: false },
+              { label: '칼로리 (kcal)', val: calories, set: setCalories, ph: '200', decimal: false },
+            ].map(({ label, val, set, ph, decimal }) => (
               <div key={label}>
                 <label className="block text-xs text-gray-500 mb-1">{label}</label>
-                <input type="number" inputMode="decimal" value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                <input type="number" inputMode={decimal ? 'decimal' : 'numeric'} step={decimal ? 'any' : '1'} value={val} onChange={e => set(e.target.value)} placeholder={ph}
                   className="w-full h-12 border border-gray-200 rounded-xl px-3 text-gray-800 focus:outline-none focus:border-[#2e6da4]" />
               </div>
             ))}
