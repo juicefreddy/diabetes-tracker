@@ -13,6 +13,10 @@ interface EditState { id: string; value: string; memo: string }
 export default function GlucosePage() {
   const [tab, setTab] = useState<'input' | 'records'>('input')
   const [date, setDate] = useState(getTodayString())
+  const [measureTime, setMeasureTime] = useState(() => {
+    const n = new Date()
+    return `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`
+  })
   const [timePoint, setTimePoint] = useState<TimePoint>('fasting')
   const [value, setValue] = useState('')
   const [memo, setMemo] = useState('')
@@ -36,11 +40,17 @@ export default function GlucosePage() {
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 2500) }
 
+  function formatTime(iso?: string) {
+    if (!iso) return ''
+    return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+  }
+
   async function handleSave() {
     if (!value || isNaN(Number(value))) return
     setSaving(true)
+    const createdAt = new Date(`${date}T${measureTime}:00`).toISOString()
     const { error } = await supabase.from('blood_glucose').insert({
-      date, time_point: timePoint, value: Number(value), memo: memo || null,
+      date, time_point: timePoint, value: Number(value), memo: memo || null, created_at: createdAt,
     })
     setSaving(false)
     if (!error) { setValue(''); setMemo(''); showToast('저장되었습니다!'); fetchRecords() }
@@ -90,9 +100,13 @@ export default function GlucosePage() {
       {tab === 'input' && (
         <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">날짜</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-              className="w-full h-12 border border-gray-200 rounded-xl px-3 text-gray-800 focus:outline-none focus:border-[#2e6da4]" />
+            <label className="block text-sm font-medium text-gray-600 mb-1">날짜 / 시간</label>
+            <div className="flex gap-2">
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+                className="flex-1 border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#2e6da4]" />
+              <input type="time" value={measureTime} onChange={(e) => setMeasureTime(e.target.value)}
+                className="w-28 border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#2e6da4]" />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">측정 시점</label>
@@ -168,7 +182,10 @@ export default function GlucosePage() {
                         ) : (
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-xs text-gray-500">{getTimePointLabel(entry.time_point)}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs text-gray-500">{getTimePointLabel(entry.time_point)}</p>
+                                {entry.created_at && <p className="text-xs text-gray-400">{formatTime(entry.created_at)}</p>}
+                              </div>
                               <div className="flex items-baseline gap-2">
                                 <p className={`text-xl font-bold ${j.text}`}>{entry.value}</p>
                                 <p className="text-xs">{j.label}</p>
