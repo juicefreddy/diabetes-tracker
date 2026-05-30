@@ -21,14 +21,34 @@ export function setStoredTZ(tz: string): void {
 
 export function formatTimeInTZ(iso: string, tz: string = DEFAULT_TZ): string {
   try {
-    return new Intl.DateTimeFormat('ko-KR', {
-      hour: '2-digit',
+    const parts = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
       hour12: false,
       timeZone: tz,
-    }).format(new Date(iso))
+    }).formatToParts(new Date(iso))
+    const h = parts.find(p => p.type === 'hour')?.value ?? '0'
+    const m = parts.find(p => p.type === 'minute')?.value ?? '00'
+    return `${h.padStart(2, '0')}:${m}`
   } catch {
     return ''
+  }
+}
+
+export function getCurrentTimeInTZ(tz: string = DEFAULT_TZ): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: tz,
+    }).formatToParts(new Date())
+    const h = parts.find(p => p.type === 'hour')?.value ?? '0'
+    const m = parts.find(p => p.type === 'minute')?.value ?? '00'
+    return `${h.padStart(2, '0')}:${m}`
+  } catch {
+    const n = new Date()
+    return `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`
   }
 }
 
