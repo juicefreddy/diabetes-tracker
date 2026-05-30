@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getTodayString } from '@/lib/utils'
-import { getStoredTZ, formatTimeInTZ, localToUTCIso } from '@/lib/timezone'
+import { getStoredTZ, formatTimeInTZ, localToUTCIso, getCurrentTimeInTZ } from '@/lib/timezone'
 
 const MEAL_TYPES = [
   { value: 'breakfast', label: '아침' },
@@ -36,12 +36,10 @@ interface MealRecord {
 }
 
 export default function MealsPage() {
+  const [tz] = useState(() => getStoredTZ())
   const [tab, setTab] = useState<'input' | 'records'>('input')
   const [date, setDate] = useState(getTodayString())
-  const [mealTime, setMealTime] = useState(() => {
-    const n = new Date()
-    return `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`
-  })
+  const [mealTime, setMealTime] = useState(() => getCurrentTimeInTZ(getStoredTZ()))
   const [mealType, setMealType] = useState<MealType>('breakfast')
   const [tomatoCheck, setTomatoCheck] = useState(false)
   const [mealOrderCheck, setMealOrderCheck] = useState(false)
@@ -57,7 +55,6 @@ export default function MealsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editFoods, setEditFoods] = useState<string[]>([])
   const [editFoodInput, setEditFoodInput] = useState('')
-  const [tz] = useState(() => getStoredTZ())
 
   const fetchRecords = useCallback(async () => {
     setRecordsLoading(true)

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { BloodGlucose } from '@/lib/types'
 import { judgeGlucose, getTimePointLabel, getTodayString, formatDate } from '@/lib/utils'
-import { getStoredTZ, formatTimeInTZ, localToUTCIso } from '@/lib/timezone'
+import { getStoredTZ, formatTimeInTZ, localToUTCIso, getCurrentTimeInTZ } from '@/lib/timezone'
 
 const TIME_POINTS = ['fasting', 'after_breakfast', 'after_lunch', 'after_dinner', 'bedtime'] as const
 type TimePoint = typeof TIME_POINTS[number]
@@ -13,11 +13,9 @@ interface EditState { id: string; value: string; memo: string }
 
 export default function GlucosePage() {
   const [tab, setTab] = useState<'input' | 'records'>('input')
+  const [tz] = useState(() => getStoredTZ())
   const [date, setDate] = useState(getTodayString())
-  const [measureTime, setMeasureTime] = useState(() => {
-    const n = new Date()
-    return `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`
-  })
+  const [measureTime, setMeasureTime] = useState(() => getCurrentTimeInTZ(getStoredTZ()))
   const [timePoint, setTimePoint] = useState<TimePoint>('fasting')
   const [value, setValue] = useState('')
   const [memo, setMemo] = useState('')
@@ -26,7 +24,6 @@ export default function GlucosePage() {
   const [loadingRecords, setLoadingRecords] = useState(true)
   const [toast, setToast] = useState('')
   const [editing, setEditing] = useState<EditState | null>(null)
-  const [tz] = useState(() => getStoredTZ())
 
   const fetchRecords = useCallback(async () => {
     setLoadingRecords(true)
