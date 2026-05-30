@@ -99,11 +99,16 @@ function extractWorkoutData(text: string): WorkoutData {
     if (hr >= 40 && hr <= 250) result.avg_heart_rate = hr
   }
 
-  // 고도 (상승)
+  // 고도 (상승): 한글 패턴
   const elevMatch =
-    text.match(/고도[^0-9]*(\d+(?:[.,]\d+)?)\s*m/i) ||
-    text.match(/(\d+(?:[.,]\d+)?)\s*m\s*(?:상승|고도)/i) ||
-    text.match(/상승\s*고도[^0-9]*(\d+)/i)
+    text.match(/(?:등반|오르막|상승)?\s*고도[^0-9]*(\d+(?:[.,]\d+)?)\s*m/i) ||
+    text.match(/(\d+(?:[.,]\d+)?)\s*m\s*(?:상승|고도|등반)/i) ||
+    text.match(/상승\s*고도[^0-9]*(\d+)/i) ||
+    text.match(/등반[^0-9]*(\d+(?:[.,]\d+)?)\s*m/i) ||
+    // 영어 패턴 (Garmin, Strava, Apple Fitness 등)
+    text.match(/elev(?:ation)?(?:\s*gain)?[^0-9]*(\d+(?:[.,]\d+)?)\s*m/i) ||
+    text.match(/total\s*ascent[^0-9]*(\d+(?:[.,]\d+)?)\s*m/i) ||
+    text.match(/ascent[^0-9]*(\d+(?:[.,]\d+)?)\s*m/i)
   if (elevMatch) {
     result.elevation = parseFloat(elevMatch[1].replace(',', '.'))
   }
@@ -114,7 +119,7 @@ function extractWorkoutData(text: string): WorkoutData {
 export async function parseWorkoutImage(file: File): Promise<WorkoutData> {
   const processedDataUrl = await preprocessImage(file)
   const { createWorker } = await import('tesseract.js')
-  const worker = await createWorker('eng')
+  const worker = await createWorker(['kor', 'eng'])
   try {
     const { data: { text } } = await worker.recognize(processedDataUrl)
     return extractWorkoutData(text)
