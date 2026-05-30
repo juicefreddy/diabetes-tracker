@@ -48,17 +48,11 @@ export default function GlucosePage() {
     if (!value || isNaN(Number(value))) return
     setSaving(true)
     const createdAt = localToUTCIso(date, measureTime, tz)
-    const { data: saved, error } = await supabase.from('blood_glucose').insert({
+    const { error } = await supabase.from('blood_glucose').insert({
       date, time_point: timePoint, value: Number(value), memo: memo || null, created_at: createdAt,
-    }).select('created_at').single()
+    })
     setSaving(false)
-    if (!error) {
-      setValue(''); setMemo('')
-      const storedUTC = saved?.created_at?.slice(11, 16) ?? '?'
-      const sentUTC = createdAt.slice(11, 16)
-      showToast(storedUTC === sentUTC ? '저장되었습니다!' : `저장됨 (전송:${sentUTC}UTC → 저장:${storedUTC}UTC)`)
-      fetchRecords()
-    }
+    if (!error) { setValue(''); setMemo(''); showToast('저장되었습니다!'); fetchRecords() }
     else showToast('저장 실패: ' + error.message)
   }
 
