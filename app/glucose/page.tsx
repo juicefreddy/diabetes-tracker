@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { BloodGlucose } from '@/lib/types'
 import { judgeGlucose, getTimePointLabel, getTodayString, formatDate } from '@/lib/utils'
+import { getStoredTZ, formatTimeInTZ, DEFAULT_TZ } from '@/lib/timezone'
 
 const TIME_POINTS = ['fasting', 'after_breakfast', 'after_lunch', 'after_dinner', 'bedtime'] as const
 type TimePoint = typeof TIME_POINTS[number]
@@ -25,6 +26,8 @@ export default function GlucosePage() {
   const [loadingRecords, setLoadingRecords] = useState(true)
   const [toast, setToast] = useState('')
   const [editing, setEditing] = useState<EditState | null>(null)
+  const [tz, setTz] = useState(DEFAULT_TZ)
+  useEffect(() => { setTz(getStoredTZ()) }, [])
 
   const fetchRecords = useCallback(async () => {
     setLoadingRecords(true)
@@ -42,7 +45,7 @@ export default function GlucosePage() {
 
   function formatTime(iso?: string) {
     if (!iso) return ''
-    return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+    return formatTimeInTZ(iso, tz)
   }
 
   async function handleSave() {
