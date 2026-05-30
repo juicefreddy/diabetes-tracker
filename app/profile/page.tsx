@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { TIMEZONE_OPTIONS, DEFAULT_TZ, getStoredTZ, setStoredTZ } from '@/lib/timezone'
 
 interface Profile {
   id?: string
@@ -21,10 +22,19 @@ export default function ProfilePage() {
   const [toast, setToast] = useState('')
   const [medInput, setMedInput] = useState('')
   const [comorInput, setComorInput] = useState('')
+  const [timezone, setTimezone] = useState(DEFAULT_TZ)
 
   useEffect(() => {
     fetchProfile()
+    setTimezone(getStoredTZ())
   }, [])
+
+  function handleTimezoneChange(tz: string) {
+    setTimezone(tz)
+    setStoredTZ(tz)
+    setToast('시간대가 변경되었습니다.')
+    setTimeout(() => setToast(''), 2000)
+  }
 
   async function fetchProfile() {
     setLoading(true)
@@ -224,6 +234,21 @@ export default function ProfilePage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* 시간대 설정 */}
+      <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-gray-600">시간대 설정</h2>
+        <select
+          value={timezone}
+          onChange={(e) => handleTimezoneChange(e.target.value)}
+          className="w-full h-12 border border-gray-200 rounded-xl px-3 text-gray-800 focus:outline-none focus:border-[#2e6da4] bg-white"
+        >
+          {TIMEZONE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        <p className="text-xs text-gray-400">혈당·식단·운동 기록의 시간 표시에 적용됩니다.</p>
       </div>
 
       <button
