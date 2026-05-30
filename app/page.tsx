@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { BloodGlucose, Exercise } from '@/lib/types'
 import { judgeGlucose, getTimePointLabel, getTodayString, formatDate } from '@/lib/utils'
+import { CURRENT_VERSION } from '@/lib/changelog'
 
 const MiniLineChart = dynamic(() => import('./components/charts/MiniLineChart'), { ssr: false })
 
@@ -67,7 +68,12 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500">{isToday ? '오늘' : '선택한 날짜'}</p>
           <h1 className="text-xl font-bold text-gray-800">{formatDate(selectedDate)}</h1>
         </div>
-        <Link href="/profile" className="text-2xl" aria-label="프로필">👤</Link>
+        <div className="flex items-center gap-2">
+          <Link href="/profile" className="flex items-center gap-1.5 text-gray-500 text-sm">
+            <span className="text-xs text-gray-400">{CURRENT_VERSION}</span>
+            <span className="text-2xl">👤</span>
+          </Link>
+        </div>
       </div>
 
       {/* 날짜 선택 */}

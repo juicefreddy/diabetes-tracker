@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { TIMEZONE_OPTIONS, DEFAULT_TZ, getStoredTZ, setStoredTZ } from '@/lib/timezone'
+import { CHANGELOG, CURRENT_VERSION, type ChangelogEntry } from '@/lib/changelog'
 
 interface Profile {
   id?: string
@@ -17,6 +18,7 @@ interface Profile {
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile>({})
+  const [changelogOpen, setChangelogOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
@@ -263,6 +265,51 @@ export default function ProfilePage() {
           </>
         ) : '프로필 저장'}
       </button>
+
+      {/* 앱 정보 / 변경 이력 */}
+      <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
+        <button
+          onClick={() => setChangelogOpen((o) => !o)}
+          className="w-full flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-gray-600">앱 정보</h2>
+            <span className="text-xs bg-[#2e6da4] text-white px-2 py-0.5 rounded-full font-medium">
+              {CURRENT_VERSION}
+            </span>
+          </div>
+          <span className="text-gray-400 text-sm">{changelogOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {changelogOpen && (
+          <div className="space-y-4 pt-1">
+            {CHANGELOG.map((entry: ChangelogEntry) => (
+              <div key={entry.version} className="border-l-2 border-gray-100 pl-3 space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-bold text-gray-800">{entry.version}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    entry.type === 'feature' ? 'bg-blue-50 text-blue-600' :
+                    entry.type === 'fix'     ? 'bg-orange-50 text-orange-600' :
+                                              'bg-green-50 text-green-600'
+                  }`}>
+                    {entry.type === 'feature' ? '신기능' : entry.type === 'fix' ? '버그수정' : '최초출시'}
+                  </span>
+                  <span className="text-xs text-gray-400">{entry.date}</span>
+                </div>
+                <p className="text-xs font-medium text-gray-700">{entry.title}</p>
+                <ul className="space-y-0.5">
+                  {entry.items.map((item, i) => (
+                    <li key={i} className="text-xs text-gray-500 flex gap-1.5">
+                      <span className="text-gray-300 shrink-0">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
