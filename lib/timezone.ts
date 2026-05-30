@@ -10,6 +10,18 @@ export const TIMEZONE_OPTIONS = [
   { value: 'UTC', label: 'UTC' },
 ]
 
+// Fixed UTC offsets in minutes (no DST). Seoul/Tokyo have no DST so this is exact.
+// DST zones (NY, LA, London) are approximate but acceptable for primary Korean user base.
+const TZ_OFFSETS: Record<string, number> = {
+  'Asia/Seoul': 540,
+  'Asia/Tokyo': 540,
+  'Asia/Shanghai': 480,
+  'America/New_York': -300,
+  'America/Los_Angeles': -480,
+  'Europe/London': 0,
+  'UTC': 0,
+}
+
 export function getStoredTZ(): string {
   if (typeof window === 'undefined') return DEFAULT_TZ
   return localStorage.getItem('userTimezone') ?? DEFAULT_TZ
@@ -21,34 +33,32 @@ export function setStoredTZ(tz: string): void {
 
 export function formatTimeInTZ(iso: string, tz: string = DEFAULT_TZ): string {
   try {
-    // 'sv' locale reliably returns "YYYY-MM-DD HH:MM:SS" with timezone applied
-    const s = new Date(iso).toLocaleString('sv', { timeZone: tz })
-    return s.slice(11, 16) // "HH:MM"
+    const offsetMs = (TZ_OFFSETS[tz] ?? 0) * 60000
+    const local = new Date(new Date(iso).getTime() + offsetMs)
+    return `${String(local.getUTCHours()).padStart(2, '0')}:${String(local.getUTCMinutes()).padStart(2, '0')}`
   } catch {
     return ''
   }
 }
 
 export function getCurrentTimeInTZ(tz: string = DEFAULT_TZ): string {
-  try {
-    const s = new Date().toLocaleString('sv', { timeZone: tz })
-    return s.slice(11, 16) // "HH:MM"
-  } catch {
-    const n = new Date()
-    return `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`
-  }
+  const offsetMs = (TZ_OFFSETS[tz] ?? 0) * 60000
+  const local = new Date(Date.now() + offsetMs)
+  return `${String(local.getUTCHours()).padStart(2, '0')}:${String(local.getUTCMinutes()).padStart(2, '0')}`
 }
 
 export function getTodayInTZ(tz: string = DEFAULT_TZ): string {
-  // 'sv' locale returns YYYY-MM-DD format
-  return new Intl.DateTimeFormat('sv', { timeZone: tz }).format(new Date())
+  const offsetMs = (TZ_OFFSETS[tz] ?? 0) * 60000
+  const local = new Date(Date.now() + offsetMs)
+  const y = local.getUTCFullYear()
+  const m = String(local.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(local.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
-// 사용자가 입력한 로컬 시각(선택된 타임존 기준)을 UTC ISO 문자열로 변환
+// Converts user-entered local time (in the selected timezone) to a UTC ISO string
 export function localToUTCIso(dateStr: string, timeStr: string, tz: string): string {
-  const probe = new Date(`${dateStr}T${timeStr}:00Z`)
-  const inTZStr = probe.toLocaleString('sv', { timeZone: tz }) // "YYYY-MM-DD HH:MM:SS"
-  const inTZ = new Date(inTZStr + 'Z')
-  const offsetMs = probe.getTime() - inTZ.getTime()
-  return new Date(probe.getTime() + offsetMs).toISOString()
+  const offsetMs = (TZ_OFFSETS[tz] ?? 0) * 60000
+  const localAsUTC = new Date(`${dateStr}T${timeStr}:00Z`)
+  return new Date(localAsUTC.getTime() - offsetMs).toISOString()
 }
