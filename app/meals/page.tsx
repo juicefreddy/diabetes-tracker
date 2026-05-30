@@ -107,6 +107,7 @@ export default function MealsPage() {
       setTomatoCheck(false)
       setMealOrderCheck(false)
       showToast('저장되었습니다!')
+      fetchRecords()
     } else {
       showToast('저장 실패: ' + error.message)
     }

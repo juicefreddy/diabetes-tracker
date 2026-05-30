@@ -34,7 +34,11 @@ export function setStoredTZ(tz: string): void {
 export function formatTimeInTZ(iso: string, tz: string = DEFAULT_TZ): string {
   try {
     const offsetMs = (TZ_OFFSETS[tz] ?? 0) * 60000
-    const local = new Date(new Date(iso).getTime() + offsetMs)
+    // Supabase may return timestamps without timezone indicator (e.g. "2026-05-30T05:29:00").
+    // Without a suffix, new Date() parses as browser local time, causing double-offset on Seoul devices.
+    // Force UTC by appending Z when no timezone marker is present after the seconds position.
+    const normalized = iso.includes('Z') || iso.indexOf('+', 10) !== -1 ? iso : iso.replace(' ', 'T') + 'Z'
+    const local = new Date(new Date(normalized).getTime() + offsetMs)
     return `${String(local.getUTCHours()).padStart(2, '0')}:${String(local.getUTCMinutes()).padStart(2, '0')}`
   } catch {
     return ''
