@@ -173,7 +173,10 @@ export default function MealsPage() {
       {tab === 'input' && (
         <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">날짜 / 식사 시간</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              날짜 / 식사 시간
+              <span className="ml-2 text-xs text-gray-400 font-normal">({tz})</span>
+            </label>
             <div className="flex gap-2">
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
                 className="flex-1 border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#2e6da4]" />
