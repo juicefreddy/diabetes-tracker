@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { BloodGlucose } from '@/lib/types'
 import { judgeGlucose, getTimePointLabel, getTodayString, formatDate } from '@/lib/utils'
-import { getStoredTZ, formatTimeInTZ, DEFAULT_TZ } from '@/lib/timezone'
+import { getStoredTZ, formatTimeInTZ, localToUTCIso } from '@/lib/timezone'
 
 const TIME_POINTS = ['fasting', 'after_breakfast', 'after_lunch', 'after_dinner', 'bedtime'] as const
 type TimePoint = typeof TIME_POINTS[number]
@@ -26,8 +26,7 @@ export default function GlucosePage() {
   const [loadingRecords, setLoadingRecords] = useState(true)
   const [toast, setToast] = useState('')
   const [editing, setEditing] = useState<EditState | null>(null)
-  const [tz, setTz] = useState(DEFAULT_TZ)
-  useEffect(() => { setTz(getStoredTZ()) }, [])
+  const [tz] = useState(() => getStoredTZ())
 
   const fetchRecords = useCallback(async () => {
     setLoadingRecords(true)
@@ -51,7 +50,7 @@ export default function GlucosePage() {
   async function handleSave() {
     if (!value || isNaN(Number(value))) return
     setSaving(true)
-    const createdAt = new Date(`${date}T${measureTime}:00`).toISOString()
+    const createdAt = localToUTCIso(date, measureTime, tz)
     const { error } = await supabase.from('blood_glucose').insert({
       date, time_point: timePoint, value: Number(value), memo: memo || null, created_at: createdAt,
     })

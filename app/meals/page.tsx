@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getTodayString } from '@/lib/utils'
-import { getStoredTZ, formatTimeInTZ, DEFAULT_TZ } from '@/lib/timezone'
+import { getStoredTZ, formatTimeInTZ, localToUTCIso } from '@/lib/timezone'
 
 const MEAL_TYPES = [
   { value: 'breakfast', label: '아침' },
@@ -57,8 +57,7 @@ export default function MealsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editFoods, setEditFoods] = useState<string[]>([])
   const [editFoodInput, setEditFoodInput] = useState('')
-  const [tz, setTz] = useState(DEFAULT_TZ)
-  useEffect(() => { setTz(getStoredTZ()) }, [])
+  const [tz] = useState(() => getStoredTZ())
 
   const fetchRecords = useCallback(async () => {
     setRecordsLoading(true)
@@ -94,7 +93,7 @@ export default function MealsPage() {
   async function handleSave() {
     if (foods.length === 0) return
     setSaving(true)
-    const createdAt = new Date(`${date}T${mealTime}:00`).toISOString()
+    const createdAt = localToUTCIso(date, mealTime, tz)
     const { error } = await supabase.from('meals').insert({
       date,
       meal_type: mealType,

@@ -36,3 +36,12 @@ export function getTodayInTZ(tz: string = DEFAULT_TZ): string {
   // 'sv' locale returns YYYY-MM-DD format
   return new Intl.DateTimeFormat('sv', { timeZone: tz }).format(new Date())
 }
+
+// 사용자가 입력한 로컬 시각(선택된 타임존 기준)을 UTC ISO 문자열로 변환
+export function localToUTCIso(dateStr: string, timeStr: string, tz: string): string {
+  const probe = new Date(`${dateStr}T${timeStr}:00Z`)
+  const inTZStr = probe.toLocaleString('sv', { timeZone: tz }) // "YYYY-MM-DD HH:MM:SS"
+  const inTZ = new Date(inTZStr + 'Z')
+  const offsetMs = probe.getTime() - inTZ.getTime()
+  return new Date(probe.getTime() + offsetMs).toISOString()
+}
