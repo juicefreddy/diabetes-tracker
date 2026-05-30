@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Exercise } from '@/lib/types'
 import { getTodayString, formatDate, getExerciseTypeLabel, getTimeOfDayLabel } from '@/lib/utils'
+import { getStoredTZ, formatTimeInTZ } from '@/lib/timezone'
 import type { WorkoutData } from '@/lib/parseWorkoutImage'
 
 const EXERCISE_TYPES = ['walking', 'stepper', 'band', 'cycling', 'other'] as const
@@ -22,6 +23,7 @@ interface EditState {
 
 export default function ExercisePage() {
   const [tab, setTab] = useState<'input' | 'records'>('input')
+  const [tz] = useState(() => getStoredTZ())
   const [date, setDate] = useState(getTodayString())
   const [type, setType] = useState<ExerciseType>('walking')
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('after_dinner')
@@ -50,6 +52,11 @@ export default function ExercisePage() {
   useEffect(() => { if (tab === 'records') fetchRecords() }, [tab, fetchRecords])
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 2500) }
+
+  function formatTime(iso?: string) {
+    if (!iso) return ''
+    return formatTimeInTZ(iso, tz)
+  }
 
   async function handleImageParse(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -83,6 +90,7 @@ export default function ExercisePage() {
       avg_heart_rate: heartRate ? Number(heartRate) : null,
       elevation: elevation ? Number(elevation) : null,
       intensity, calories: calories ? Number(calories) : null,
+      created_at: new Date().toISOString(),
     })
     setSaving(false)
     if (!error) {
@@ -280,9 +288,12 @@ export default function ExercisePage() {
                         <div className="flex items-start gap-2">
                           <span className="text-xl mt-0.5">🏃</span>
                           <div>
-                            <p className="text-sm font-medium text-gray-800">
-                              {getExerciseTypeLabel(s.type)} · {getTimeOfDayLabel(s.time_of_day)}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-gray-800">
+                                {getExerciseTypeLabel(s.type)} · {getTimeOfDayLabel(s.time_of_day)}
+                              </p>
+                              {s.created_at && <p className="text-xs text-gray-400">{formatTime(s.created_at)}</p>}
+                            </div>
                             <p className="text-xs text-gray-500">
                               {s.duration_minutes}분
                               {s.distance_km ? ` · ${s.distance_km}km` : ''}
