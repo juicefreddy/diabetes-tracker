@@ -11,7 +11,14 @@ import { CURRENT_VERSION } from '@/lib/changelog'
 const MiniLineChart = dynamic(() => import('./components/charts/MiniLineChart'), { ssr: false })
 
 interface ChartPoint { date: string; value: number | null }
-interface MealRecord { id: string; meal_type: string; foods: string[] }
+interface MealRecord {
+  id: string
+  meal_type: string
+  foods: string[]
+  tomato_check?: boolean
+  meal_order_check?: boolean
+  rice_amount?: string
+}
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(getTodayString())
@@ -33,7 +40,7 @@ export default function DashboardPage() {
     const [glucoseRes, exerciseRes, mealsRes, chartRes] = await Promise.all([
       supabase.from('blood_glucose').select('*').eq('date', selectedDate).order('created_at'),
       supabase.from('exercise').select('*').eq('date', selectedDate),
-      supabase.from('meals').select('id, meal_type, foods').eq('date', selectedDate),
+      supabase.from('meals').select('id, meal_type, foods, tomato_check, meal_order_check, rice_amount').eq('date', selectedDate),
       supabase.from('blood_glucose').select('date, value')
         .gte('date', getDateDaysAgo(6)).eq('time_point', 'fasting').order('date'),
     ])
@@ -59,6 +66,72 @@ export default function DashboardPage() {
   const totalExerciseMin = exercise.reduce((sum, e) => sum + e.duration_minutes, 0)
   const timePoints = ['fasting', 'after_breakfast', 'after_lunch', 'after_dinner'] as const
   const mealLabels: Record<string, string> = { breakfast: '아침', lunch: '점심', dinner: '저녁', snack: '간식' }
+
+  function buildClaudePrompt(): string {
+    const lines: string[] = []
+    lines.push(`안녕하세요. 저는 당뇨 관리 중인 환자입니다. ${selectedDate} 하루 데이터를 정리했으니 당뇨 관리 관점에서 분석과 조언 부탁드립니다.`)
+    lines.push('')
+
+    lines.push('【혈당】')
+    const tpOrder = ['fasting', 'after_breakfast', 'after_lunch', 'after_dinner', 'bedtime']
+    const tpLabels: Record<string, string> = {
+      fasting: '공복', after_breakfast: '아침식후2h',
+      after_lunch: '점심식후2h', after_dinner: '저녁식후2h', bedtime: '취침전',
+    }
+    const glucoseEntries = tpOrder.map(tp => glucose.find(g => g.time_point === tp)).filter(Boolean) as BloodGlucose[]
+    if (glucoseEntries.length === 0) {
+      lines.push('- 입력 없음')
+    } else {
+      glucoseEntries.forEach(g => {
+        const note = g.memo ? ` (${g.memo})` : ''
+        lines.push(`- ${tpLabels[g.time_point] ?? g.time_point}: ${g.value} mg/dL${note}`)
+      })
+    }
+    lines.push('')
+
+    lines.push('【식단】')
+    const mealOrder = ['breakfast', 'lunch', 'dinner', 'snack']
+    const riceLabels: Record<string, string> = { none: '안먹음', quarter: '1/4공기', half: '반공기', three_quarter: '3/4공기', full: '1공기' }
+    if (meals.length === 0) {
+      lines.push('- 입력 없음')
+    } else {
+      const sorted = [...meals].sort((a, b) => mealOrder.indexOf(a.meal_type) - mealOrder.indexOf(b.meal_type))
+      sorted.forEach(m => {
+        const extras: string[] = []
+        if (m.rice_amount && m.rice_amount !== 'none') extras.push(`밥 ${riceLabels[m.rice_amount] ?? m.rice_amount}`)
+        if (m.tomato_check) extras.push('방울토마토 ✓')
+        if (m.meal_order_check) extras.push('식사순서 준수 ✓')
+        const extraStr = extras.length > 0 ? ` [${extras.join(', ')}]` : ''
+        lines.push(`- ${mealLabels[m.meal_type] ?? m.meal_type}: ${m.foods.join(', ')}${extraStr}`)
+      })
+    }
+    lines.push('')
+
+    lines.push('【운동】')
+    const exTypeLabels: Record<string, string> = { walking: '걷기', stepper: '스테퍼', band: '밴드운동', cycling: '자전거', other: '기타' }
+    const todLabels: Record<string, string> = { morning: '아침', after_lunch: '점심후', after_dinner: '저녁후', evening: '귀가' }
+    if (exercise.length === 0) {
+      lines.push('- 없음')
+    } else {
+      exercise.forEach(e => {
+        const parts = [`${exTypeLabels[e.type] ?? e.type} ${e.duration_minutes}분 (${todLabels[e.time_of_day] ?? e.time_of_day})`]
+        if (e.distance_km) parts.push(`${e.distance_km}km`)
+        if (e.avg_heart_rate) parts.push(`심박 ${e.avg_heart_rate}bpm`)
+        if (e.calories) parts.push(`${e.calories}kcal`)
+        if (e.elevation) parts.push(`고도상승 ${e.elevation}m`)
+        lines.push(`- ${parts.join(', ')}`)
+      })
+    }
+    lines.push('')
+    lines.push('위 데이터를 바탕으로 혈당 조절 상태 평가, 식단의 적절성, 운동 효과, 개선이 필요한 부분에 대해 구체적인 조언 부탁드립니다.')
+
+    return lines.join('\n')
+  }
+
+  function openClaudeAnalysis() {
+    const prompt = buildClaudePrompt()
+    window.open(`https://claude.ai/new?q=${encodeURIComponent(prompt)}`, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
@@ -189,6 +262,16 @@ export default function DashboardPage() {
           <span className="text-xl">📊</span> 트렌드 분석
         </Link>
       </div>
+
+      {/* Claude AI 분석 버튼 */}
+      <button
+        onClick={openClaudeAnalysis}
+        disabled={loading}
+        className="w-full flex items-center justify-center gap-2 h-14 bg-gradient-to-r from-[#7c3aed] to-[#a855f7] text-white rounded-2xl shadow-sm text-sm font-semibold disabled:opacity-50 transition-opacity"
+      >
+        <span className="text-xl">🤖</span>
+        Claude AI로 {selectedDate === getTodayString() ? '오늘' : selectedDate} 데이터 분석하기
+      </button>
     </div>
   )
 }
