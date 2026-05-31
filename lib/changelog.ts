@@ -8,9 +8,21 @@ export interface ChangelogEntry {
   items: string[]
 }
 
-export const CURRENT_VERSION = 'v1.6.0'
+export const CURRENT_VERSION = 'v1.7.0'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.7.0',
+    date: '2026-05-31 18:00',
+    type: 'feature',
+    title: 'UI 개선 — SVG 라인 아이콘 네비게이션',
+    items: [
+      '하단 탭바 이모지 → SVG 라인 아이콘으로 전환 (Option B 블루 메디컬)',
+      '현재 페이지 탭에 파란 배경 하이라이트 표시',
+      '비활성 탭은 회색, 활성 탭은 앱 기본색(파랑)으로 구분',
+      '네비게이션 그림자 추가로 탭바와 콘텐츠 구분 강화',
+    ],
+  },
   {
     version: 'v1.6.0',
     date: '2026-05-31 17:00',
