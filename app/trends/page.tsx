@@ -7,14 +7,19 @@ import { estimateHbA1c, judgeGlucose } from '@/lib/utils'
 
 const GlucoseLineChart = dynamic(() => import('../components/charts/GlucoseLineChart'), { ssr: false })
 const ExerciseBarChart = dynamic(() => import('../components/charts/ExerciseBarChart'), { ssr: false })
+const WeightLineChart = dynamic(() => import('../components/charts/WeightLineChart'), { ssr: false })
 
 interface ChartPoint { date: string; value: number | null }
 interface ExercisePoint { date: string; minutes: number }
+interface WeightRecord { date: string; weight_kg: number }
 
 export default function TrendsPage() {
   const [fastingData, setFastingData] = useState<ChartPoint[]>([])
   const [postprandialData, setPostprandialData] = useState<ChartPoint[]>([])
   const [exerciseData, setExerciseData] = useState<ExercisePoint[]>([])
+  const [weightData, setWeightData] = useState<ChartPoint[]>([])
+  const [weightRecords, setWeightRecords] = useState<WeightRecord[]>([])
+  const [heightCm, setHeightCm] = useState<number | undefined>()
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<'30' | '90' | 'all'>('all')
 
@@ -37,10 +42,19 @@ export default function TrendsPage() {
       exerciseQuery = exerciseQuery.gte('date', fromStr)
     }
 
-    const [glucoseRes, exerciseRes] = await Promise.all([glucoseQuery, exerciseQuery])
+    let weightQuery = supabase.from('weight_logs').select('date, weight_kg').order('date')
+    if (period !== 'all') {
+      const from = new Date()
+      from.setDate(from.getDate() - Number(period))
+      const y = from.getFullYear(), mo = String(from.getMonth() + 1).padStart(2, '0'), dy = String(from.getDate()).padStart(2, '0')
+      weightQuery = weightQuery.gte('date', `${y}-${mo}-${dy}`)
+    }
+
+    const [glucoseRes, exerciseRes, weightRes] = await Promise.all([glucoseQuery, exerciseQuery, weightQuery])
 
     const glucoseRaw = (glucoseRes.data ?? []) as { date: string; time_point: string; value: number }[]
     const exerciseRaw = (exerciseRes.data ?? []) as { date: string; duration_minutes: number }[]
+    const weightRaw = (weightRes.data ?? []) as WeightRecord[]
 
     // 데이터 범위 기반 날짜 배열 생성
     const allDates = [...glucoseRaw.map(g => g.date), ...exerciseRaw.map(e => e.date)]
@@ -91,8 +105,16 @@ export default function TrendsPage() {
       })
     )
     setExerciseData(dates.map((d) => ({ date: d, minutes: exGrouped[d] ?? 0 })))
+    setWeightData(weightRaw.map(w => ({ date: w.date, value: w.weight_kg })))
+    setWeightRecords(weightRaw)
     setLoading(false)
   }
+
+  useEffect(() => {
+    supabase.from('patient_profiles').select('height_cm').single().then(({ data }) => {
+      if (data?.height_cm) setHeightCm(data.height_cm)
+    })
+  }, [])
 
   // 통계 계산
   const fastingValues = fastingData.map((d) => d.value).filter((v): v is number => v !== null)
@@ -183,6 +205,36 @@ export default function TrendsPage() {
             <h2 className="text-sm font-semibold text-gray-600 mb-3">운동량 (분)</h2>
             <ExerciseBarChart data={exerciseData} />
           </div>
+
+          {/* 몸무게 섹션 */}
+          {weightRecords.length > 0 && (() => {
+            const first = weightRecords[0]
+            const last = weightRecords[weightRecords.length - 1]
+            const totalDiff = Math.round((first.weight_kg - last.weight_kg) * 10) / 10
+            const latestBmi = heightCm ? Math.round((first.weight_kg / (heightCm / 100) ** 2) * 10) / 10 : null
+            return (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded-2xl shadow-sm p-4">
+                    <p className="text-xs text-gray-500 mb-1">최근 체중</p>
+                    <p className="text-2xl font-bold text-teal-600">{first.weight_kg}</p>
+                    <p className="text-xs text-gray-400">kg{latestBmi ? ` · BMI ${latestBmi}` : ''}</p>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm p-4">
+                    <p className="text-xs text-gray-500 mb-1">기간 변화량</p>
+                    <p className={`text-2xl font-bold ${totalDiff > 0 ? 'text-green-600' : totalDiff < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                      {totalDiff > 0 ? '▼' : totalDiff < 0 ? '▲' : '─'} {Math.abs(totalDiff)}
+                    </p>
+                    <p className="text-xs text-gray-400">kg ({weightRecords.length}회 측정)</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm p-4">
+                  <h2 className="text-sm font-semibold text-gray-600 mb-3">체중 변화 추이</h2>
+                  <WeightLineChart data={weightData} height_cm={heightCm} />
+                </div>
+              </>
+            )
+          })()}
         </>
       )}
     </div>

@@ -26,6 +26,8 @@ export default function DashboardPage() {
   const [exercise, setExercise] = useState<Exercise[]>([])
   const [meals, setMeals] = useState<MealRecord[]>([])
   const [chartData, setChartData] = useState<ChartPoint[]>([])
+  const [todayWeight, setTodayWeight] = useState<number | null>(null)
+  const [prevWeight, setPrevWeight] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const isToday = selectedDate === getTodayString()
 
@@ -37,16 +39,23 @@ export default function DashboardPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [glucoseRes, exerciseRes, mealsRes, chartRes] = await Promise.all([
+    const [glucoseRes, exerciseRes, mealsRes, chartRes, weightRes] = await Promise.all([
       supabase.from('blood_glucose').select('*').eq('date', selectedDate).order('created_at'),
       supabase.from('exercise').select('*').eq('date', selectedDate),
       supabase.from('meals').select('id, meal_type, foods, tomato_check, meal_order_check, rice_amount').eq('date', selectedDate),
       supabase.from('blood_glucose').select('date, value')
         .gte('date', getDateDaysAgo(6)).eq('time_point', 'fasting').order('date'),
+      supabase.from('weight_logs').select('date, weight_kg').lte('date', selectedDate).order('date', { ascending: false }).limit(2),
     ])
     setGlucose((glucoseRes.data as BloodGlucose[]) ?? [])
     setExercise((exerciseRes.data as Exercise[]) ?? [])
     setMeals((mealsRes.data as MealRecord[]) ?? [])
+
+    const weightRows = (weightRes.data ?? []) as { date: string; weight_kg: number }[]
+    const todayRow = weightRows.find(r => r.date === selectedDate)
+    const prevRow = weightRows.find(r => r.date !== selectedDate)
+    setTodayWeight(todayRow?.weight_kg ?? null)
+    setPrevWeight(prevRow?.weight_kg ?? null)
 
     const raw = (chartRes.data ?? []) as { date: string; value: number }[]
     const grouped: Record<string, number[]> = {}
@@ -123,7 +132,18 @@ export default function DashboardPage() {
       })
     }
     lines.push('')
-    lines.push('위 데이터를 바탕으로 혈당 조절 상태 평가, 식단의 적절성, 운동 효과, 개선이 필요한 부분에 대해 구체적인 조언 부탁드립니다.')
+
+    lines.push('【몸무게】')
+    if (todayWeight !== null) {
+      const weightDiffStr = prevWeight !== null
+        ? ` (전일 대비 ${todayWeight > prevWeight ? '+' : ''}${Math.round((todayWeight - prevWeight) * 10) / 10}kg)`
+        : ''
+      lines.push(`- ${todayWeight} kg${weightDiffStr}`)
+    } else {
+      lines.push('- 미입력')
+    }
+    lines.push('')
+    lines.push('위 데이터를 바탕으로 혈당 조절 상태 평가, 식단의 적절성, 운동 효과, 체중 관리 상태, 개선이 필요한 부분에 대해 구체적인 조언 부탁드립니다.')
 
     return lines.join('\n')
   }
@@ -189,6 +209,32 @@ export default function DashboardPage() {
             })}
           </div>
         )}
+      </div>
+
+      {/* 몸무게 카드 */}
+      <div className="bg-white rounded-2xl shadow-sm p-4">
+        <h2 className="text-sm font-semibold text-gray-600 mb-2">몸무게</h2>
+        {loading ? <div className="h-10 bg-gray-100 rounded-xl animate-pulse" /> :
+          todayWeight === null ? (
+            <Link href="/weight" className="flex items-center gap-3 text-gray-400 py-1">
+              <span className="text-2xl">⚖️</span>
+              <p className="text-sm">오늘 체중 미입력</p>
+              <span className="text-xs text-teal-600 ml-auto font-medium">입력하기 →</span>
+            </Link>
+          ) : (
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚖️</span>
+              <p className="text-lg font-bold text-teal-600">{todayWeight} kg</p>
+              {prevWeight !== null && (() => {
+                const d = Math.round((todayWeight - prevWeight) * 10) / 10
+                return (
+                  <span className={`text-sm font-semibold ${d < 0 ? 'text-green-600' : d > 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {d < 0 ? '▼' : d > 0 ? '▲' : '─'} {Math.abs(d)} kg
+                  </span>
+                )
+              })()}
+            </div>
+          )}
       </div>
 
       {/* 운동 카드 */}

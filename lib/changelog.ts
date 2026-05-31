@@ -8,9 +8,25 @@ export interface ChangelogEntry {
   items: string[]
 }
 
-export const CURRENT_VERSION = 'v1.5.1'
+export const CURRENT_VERSION = 'v1.6.0'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.6.0',
+    date: '2026-05-31 17:00',
+    type: 'feature',
+    title: '몸무게 트래킹 추가',
+    items: [
+      '⚖️ 몸무게 전용 페이지 추가 (하단 네비게이션)',
+      '매일 공복 체중 기록 — 같은 날짜 재입력 시 자동 덮어쓰기',
+      '이전 기록 대비 변화량 실시간 표시 (▲▼)',
+      '프로필에 키 입력 시 BMI 자동 계산 및 기준선 표시',
+      '체중 변화 추이 차트 (BMI 23·25 기준선 포함)',
+      '트렌드 페이지에 체중 섹션 추가',
+      '대시보드에 당일 체중 카드 추가',
+      'Claude AI 분석 프롬프트에 체중 데이터 포함',
+    ],
+  },
   {
     version: 'v1.5.1',
     date: '2026-05-31 16:00',
