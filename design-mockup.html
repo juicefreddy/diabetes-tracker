@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>혈당 트래커 UI 디자인 시안</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Noto Sans KR', sans-serif; background: #f0f2f5; padding: 24px; color: #1a1a2e; }
+  h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 32px; }
+
+  .section-title { font-size: 16px; font-weight: 700; margin: 36px 0 16px; color: #333; display: flex; align-items: center; gap-8px; }
+  .section-title span { font-size: 12px; font-weight: 500; color: #888; margin-left: 8px; }
+
+  .row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; }
+
+  /* Phone Frame */
+  .phone { width: 280px; background: white; border-radius: 36px; box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; flex-shrink: 0; }
+  .phone-label { font-size: 11px; font-weight: 700; color: #fff; padding: 6px 12px; text-align: center; letter-spacing: 0.5px; }
+  .phone-screen { padding: 0; background: #f5f7fa; min-height: 420px; position: relative; }
+
+  /* Option A — Current (Emoji) */
+  .opt-a .phone-label { background: #6b7280; }
+  .opt-a .nav { background: white; border-top: 1px solid #e5e7eb; display: flex; padding: 8px 4px 10px; justify-content: space-around; }
+  .opt-a .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .opt-a .nav-icon { font-size: 22px; line-height: 1; }
+  .opt-a .nav-label { font-size: 9.5px; color: #6b7280; }
+  .opt-a .nav-item.active .nav-label { color: #2e6da4; font-weight: 700; }
+
+  /* Option B — Blue Medical */
+  .opt-b .phone-label { background: linear-gradient(135deg, #1e40af, #2e6da4); }
+  .opt-b .nav { background: white; border-top: 1px solid #e5e7eb; display: flex; padding: 8px 4px 12px; justify-content: space-around; box-shadow: 0 -4px 20px rgba(0,0,0,0.06); }
+  .opt-b .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .opt-b .nav-icon { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+  .opt-b .nav-item.active .nav-icon { background: #eff6ff; }
+  .opt-b .nav-icon svg { width: 18px; height: 18px; stroke: #9ca3af; stroke-width: 1.8; fill: none; }
+  .opt-b .nav-item.active svg { stroke: #2563eb; }
+  .opt-b .nav-label { font-size: 9px; color: #9ca3af; font-weight: 500; }
+  .opt-b .nav-item.active .nav-label { color: #2563eb; font-weight: 700; }
+
+  /* Option C — Teal Health */
+  .opt-c .phone-label { background: linear-gradient(135deg, #0f766e, #0d9488); }
+  .opt-c .nav { background: #0f172a; display: flex; padding: 10px 8px 14px; justify-content: space-around; }
+  .opt-c .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .opt-c .nav-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+  .opt-c .nav-item.active .nav-icon { background: #0d9488; }
+  .opt-c .nav-icon svg { width: 18px; height: 18px; stroke: #475569; stroke-width: 1.8; fill: none; }
+  .opt-c .nav-item.active svg { stroke: white; }
+  .opt-c .nav-label { font-size: 9px; color: #475569; font-weight: 500; }
+  .opt-c .nav-item.active .nav-label { color: #5eead4; font-weight: 700; }
+
+  /* Option D — Warm Gradient */
+  .opt-d .phone-label { background: linear-gradient(135deg, #7c3aed, #ec4899); }
+  .opt-d .nav { background: white; border-top: 1px solid #f3e8ff; display: flex; padding: 8px 4px 12px; justify-content: space-around; box-shadow: 0 -4px 24px rgba(124,58,237,0.1); }
+  .opt-d .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .opt-d .nav-pill { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
+  .opt-d .nav-item.active .nav-pill { background: linear-gradient(135deg, #7c3aed, #ec4899); box-shadow: 0 4px 12px rgba(124,58,237,0.4); }
+  .opt-d .nav-icon svg { width: 17px; height: 17px; stroke: #d1d5db; stroke-width: 1.8; fill: none; }
+  .opt-d .nav-item.active svg { stroke: white; }
+  .opt-d .nav-label { font-size: 9px; color: #9ca3af; font-weight: 500; }
+  .opt-d .nav-item.active .nav-label { color: #7c3aed; font-weight: 700; }
+
+  /* Dashboard screens */
+  .dash { padding: 16px 12px; }
+  .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .dash-title { font-size: 18px; font-weight: 800; }
+  .dash-date { font-size: 11px; color: #9ca3af; }
+  .dash-avatar { width: 30px; height: 30px; background: #e5e7eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+
+  /* Glucose grid — Option B style */
+  .glucose-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .glucose-card { border-radius: 14px; padding: 10px; }
+  .gc-green { background: #f0fdf4; }
+  .gc-yellow { background: #fefce8; }
+  .gc-blue { background: #eff6ff; }
+  .gc-gray { background: #f9fafb; }
+  .gc-label { font-size: 9px; color: #6b7280; margin-bottom: 2px; }
+  .gc-value { font-size: 22px; font-weight: 800; }
+  .gc-green .gc-value { color: #16a34a; }
+  .gc-yellow .gc-value { color: #ca8a04; }
+  .gc-blue .gc-value { color: #2563eb; }
+  .gc-gray .gc-value { color: #9ca3af; font-size: 13px; margin-top: 4px; }
+  .gc-status { font-size: 9px; margin-top: 1px; }
+  .gc-green .gc-status { color: #16a34a; }
+  .gc-yellow .gc-status { color: #ca8a04; }
+
+  /* Mini stat row */
+  .stat-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat-card { flex: 1; background: white; border-radius: 14px; padding: 10px; }
+  .stat-icon { font-size: 16px; margin-bottom: 4px; }
+  .stat-val { font-size: 15px; font-weight: 800; color: #1e293b; }
+  .stat-sub { font-size: 9px; color: #94a3b8; margin-top: 1px; }
+
+  /* Option C Dashboard Cards */
+  .dark-card { background: #1e293b; border-radius: 16px; padding: 12px; margin-bottom: 10px; }
+  .dark-card-title { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .dark-glucose-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .dg-item { background: #0f172a; border-radius: 10px; padding: 8px; }
+  .dg-label { font-size: 8px; color: #475569; margin-bottom: 2px; }
+  .dg-val { font-size: 20px; font-weight: 800; color: #5eead4; }
+  .dg-status { font-size: 8px; color: #22d3ee; margin-top: 1px; }
+  .dg-empty { font-size: 11px; color: #334155; margin-top: 4px; }
+
+  /* Tags */
+  .tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 99px; }
+  .tag-recommend { background: #fef9c3; color: #854d0e; border: 1px solid #fde68a; }
+  .tag-current { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+
+  /* Comparison table */
+  .compare-table { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.06); width: 100%; max-width: 900px; }
+  .compare-table table { width: 100%; border-collapse: collapse; }
+  .compare-table th { background: #f8fafc; padding: 12px 16px; font-size: 12px; font-weight: 700; color: #374151; text-align: left; border-bottom: 1px solid #f1f5f9; }
+  .compare-table td { padding: 12px 16px; font-size: 12px; color: #4b5563; border-bottom: 1px solid #f9fafb; vertical-align: top; line-height: 1.6; }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+
+  /* Color swatches */
+  .palette { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .swatch { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .swatch-label { font-size: 9px; color: #6b7280; text-align: center; margin-top: 4px; }
+  .swatch-group { text-align: center; }
+
+  /* Icon sheet */
+  .icon-grid { display: flex; gap: 12px; flex-wrap: wrap; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 2px 16px rgba(0,0,0,0.06); }
+  .icon-item { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 64px; }
+  .icon-circle { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+  .icon-name { font-size: 9px; color: #6b7280; text-align: center; }
+
+  hr.divider { border: none; border-top: 2px dashed #e5e7eb; margin: 40px 0 32px; }
+
+  .pill { display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 11px; font-weight: 600; margin-right: 8px; }
+  .pill-a { background: #f3f4f6; color: #6b7280; }
+  .pill-b { background: #eff6ff; color: #2563eb; }
+  .pill-c { background: #f0fdfa; color: #0f766e; }
+  .pill-d { background: #fdf4ff; color: #7c3aed; }
+  .recommend-badge { background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 99px; vertical-align: middle; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<h1>🩺 혈당 트래커 UI 디자인 시안</h1>
+<p class="subtitle">네비게이션 아이콘 · 컬러 팔레트 · 카드 레이아웃 — 4가지 방향 제안</p>
+
+<!-- ───────────────────────────────── NAV SECTION ───────────────────────────────── -->
+<div class="section-title">네비게이션 아이콘 스타일 비교 <span>하단 탭바 기준</span></div>
+<div class="row">
+
+  <!-- Option A: Current -->
+  <div>
+    <div class="pill pill-a">A. 현재 (이모지)</div>
+    <br><br>
+    <div class="phone opt-a" style="width:320px">
+      <div class="phone-label">현재 상태</div>
+      <div class="phone-screen">
+        <div class="dash" style="background:#f5f7fa; min-height:340px;">
+          <div class="dash-header">
+            <div>
+              <div class="dash-date">오늘</div>
+              <div class="dash-title">2026년 5월 31일</div>
+            </div>
+            <div class="dash-avatar">👤</div>
+          </div>
+          <div class="glucose-grid">
+            <div class="glucose-card gc-green"><div class="gc-label">공복</div><div class="gc-value">98</div><div class="gc-status">✓ 정상</div></div>
+            <div class="glucose-card gc-yellow"><div class="gc-label">아침식후2h</div><div class="gc-value">142</div><div class="gc-status">⚠ 주의</div></div>
+            <div class="glucose-card gc-blue"><div class="gc-label">점심식후2h</div><div class="gc-value">138</div><div class="gc-status">✓ 정상</div></div>
+            <div class="glucose-card gc-gray"><div class="gc-label">저녁식후2h</div><div class="gc-value" style="font-size:13px;margin-top:4px;">미입력</div></div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-card"><div class="stat-icon">🏃</div><div class="stat-val">45분</div><div class="stat-sub">걷기</div></div>
+            <div class="stat-card"><div class="stat-icon">⚖️</div><div class="stat-val">72.3 kg</div><div class="stat-sub">▼ 0.2 kg</div></div>
+          </div>
+        </div>
+        <div class="nav opt-a" style="background:white; border-top:1px solid #e5e7eb; display:flex; padding:8px 4px 10px; justify-content:space-around;">
+          <div class="nav-item active"><div class="nav-icon">🏠</div><div class="nav-label" style="color:#2e6da4;font-weight:700;">대시보드</div></div>
+          <div class="nav-item"><div class="nav-icon">💉</div><div class="nav-label">혈당</div></div>
+          <div class="nav-item"><div class="nav-icon">🍽️</div><div class="nav-label">식단</div></div>
+          <div class="nav-item"><div class="nav-icon">🏃</div><div class="nav-label">운동</div></div>
+          <div class="nav-item"><div class="nav-icon">⚖️</div><div class="nav-label">몸무게</div></div>
+          <div class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">트렌드</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: Line Icons Blue -->
+  <div>
+    <div class="pill pill-b">B. 라인 아이콘 (블루)</div> <span class="recommend-badge">추천</span>
+    <br><br>
+    <div class="phone opt-b" style="width:320px">
+      <div class="phone-label">Option B — Clean Medical</div>
+      <div class="phone-screen">
+        <div class="dash" style="background:#f8faff; min-height:340px;">
+          <div class="dash-header">
+            <div>
+              <div class="dash-date" style="color:#93c5fd;">오늘</div>
+              <div class="dash-title" style="color:#1e3a5f;">2026년 5월 31일</div>
+            </div>
+            <div class="dash-avatar" style="background:#dbeafe;">👤</div>
+          </div>
+          <div style="background:white; border-radius:18px; padding:14px; margin-bottom:10px; box-shadow:0 1px 8px rgba(0,0,0,0.05);">
+            <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:8px;">혈당 TODAY</div>
+            <div class="glucose-grid">
+              <div class="glucose-card gc-green"><div class="gc-label">공복</div><div class="gc-value" style="color:#16a34a;">98</div><div class="gc-status" style="color:#16a34a;">정상</div></div>
+              <div class="glucose-card gc-yellow"><div class="gc-label">아침식후</div><div class="gc-value" style="color:#ca8a04;">142</div><div class="gc-status" style="color:#ca8a04;">주의</div></div>
+              <div class="glucose-card gc-blue"><div class="gc-label">점심식후</div><div class="gc-value" style="color:#2563eb;">138</div><div class="gc-status" style="color:#2563eb;">정상</div></div>
+              <div class="glucose-card gc-gray"><div class="gc-label">저녁식후</div><div class="gc-value" style="font-size:12px;color:#9ca3af;margin-top:4px;">미입력</div></div>
+            </div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-card" style="border-radius:14px;box-shadow:0 1px 8px rgba(0,0,0,0.05);"><div style="font-size:9px;color:#94a3b8;margin-bottom:2px;">몸무게</div><div class="stat-val" style="color:#0d9488;">72.3<span style="font-size:11px;font-weight:500;color:#94a3b8;"> kg</span></div><div class="stat-sub" style="color:#16a34a;">▼ 0.2 kg</div></div>
+            <div class="stat-card" style="border-radius:14px;box-shadow:0 1px 8px rgba(0,0,0,0.05);"><div style="font-size:9px;color:#94a3b8;margin-bottom:2px;">운동</div><div class="stat-val">45<span style="font-size:11px;font-weight:500;color:#94a3b8;"> 분</span></div><div class="stat-sub">걷기</div></div>
+          </div>
+        </div>
+        <!-- Nav B -->
+        <div style="background:white; border-top:1px solid #e5e7eb; display:flex; padding:8px 4px 12px; justify-content:space-around; box-shadow:0 -4px 20px rgba(0,0,0,0.05);">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:28px;height:28px;background:#eff6ff;border-radius:9px;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </div>
+            <span style="font-size:9px;color:#2563eb;font-weight:700;">대시보드</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v1h2a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h2V5a3 3 0 0 1 3-3z"/><path d="M9 12h6M9 16h4"/></svg>
+            </div>
+            <span style="font-size:9px;color:#9ca3af;">혈당</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="7" cy="6" r="1.5" fill="#9ca3af"/><circle cx="7" cy="12" r="1.5" fill="#9ca3af"/><circle cx="7" cy="18" r="1.5" fill="#9ca3af"/></svg>
+            </div>
+            <span style="font-size:9px;color:#9ca3af;">식단</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><circle cx="12" cy="5" r="2"/><path d="M12 7v6l3 3M8.5 9.5C8 11 8 13 9 14.5l3 4"/><path d="M15 17l2 3"/></svg>
+            </div>
+            <span style="font-size:9px;color:#9ca3af;">운동</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="M3 17l4-8 4 5 3-3 4 6"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
+            </div>
+            <span style="font-size:9px;color:#9ca3af;">몸무게</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <span style="font-size:9px;color:#9ca3af;">트렌드</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: Dark Teal -->
+  <div>
+    <div class="pill pill-c">C. 다크 네비 (Teal)</div>
+    <br><br>
+    <div class="phone" style="width:320px;border-radius:36px;box-shadow:0 20px 60px rgba(0,0,0,0.2);overflow:hidden;">
+      <div class="phone-label" style="background:linear-gradient(135deg,#0f766e,#0d9488);">Option C — Dark Nav</div>
+      <div class="phone-screen" style="background:#0f172a; min-height:340px;">
+        <div class="dash" style="background:#0f172a;">
+          <div class="dash-header">
+            <div>
+              <div class="dash-date" style="color:#475569;font-size:11px;">2026년 5월 31일 (오늘)</div>
+              <div class="dash-title" style="color:white;font-size:17px;">안녕하세요 👋</div>
+            </div>
+            <div class="dash-avatar" style="background:#1e293b;color:#5eead4;">👤</div>
+          </div>
+          <div style="background:#1e293b; border-radius:18px; padding:14px; margin-bottom:10px;">
+            <div style="font-size:10px;font-weight:700;color:#5eead4;margin-bottom:8px;letter-spacing:0.5px;">혈당</div>
+            <div class="dark-glucose-grid">
+              <div class="dg-item"><div class="dg-label">공복</div><div class="dg-val">98</div><div class="dg-status">정상 ✓</div></div>
+              <div class="dg-item"><div class="dg-label">아침식후</div><div class="dg-val" style="color:#fbbf24;">142</div><div class="dg-status" style="color:#fbbf24;">주의</div></div>
+              <div class="dg-item"><div class="dg-label">점심식후</div><div class="dg-val">138</div><div class="dg-status">정상 ✓</div></div>
+              <div class="dg-item"><div class="dg-label">저녁식후</div><div class="dg-empty">미입력</div></div>
+            </div>
+          </div>
+          <div class="stat-row">
+            <div style="flex:1;background:#1e293b;border-radius:14px;padding:10px;"><div style="font-size:9px;color:#475569;margin-bottom:2px;">몸무게</div><div style="font-size:16px;font-weight:800;color:#5eead4;">72.3<span style="font-size:10px;color:#475569;"> kg</span></div><div style="font-size:9px;color:#34d399;">▼ 0.2 kg</div></div>
+            <div style="flex:1;background:#1e293b;border-radius:14px;padding:10px;"><div style="font-size:9px;color:#475569;margin-bottom:2px;">운동</div><div style="font-size:16px;font-weight:800;color:#5eead4;">45<span style="font-size:10px;color:#475569;"> 분</span></div><div style="font-size:9px;color:#475569;">걷기</div></div>
+          </div>
+        </div>
+        <!-- Nav C Dark -->
+        <div style="background:#1e293b; display:flex; padding:10px 8px 14px; justify-content:space-around;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:34px;height:34px;background:#0d9488;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </div>
+            <span style="font-size:8.5px;color:#5eead4;font-weight:700;">대시보드</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v1h2a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h2V5a3 3 0 0 1 3-3z"/><path d="M9 12h6M9 16h4"/></svg>
+            </div>
+            <span style="font-size:8.5px;color:#475569;">혈당</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="7" cy="6" r="1.5" fill="#475569"/></svg>
+            </div>
+            <span style="font-size:8.5px;color:#475569;">식단</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><circle cx="12" cy="5" r="2"/><path d="M12 7v6l3 3M8.5 9.5C8 11 8 13 9 14.5l3 4"/></svg>
+            </div>
+            <span style="font-size:8.5px;color:#475569;">운동</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><path d="M3 17l4-8 4 5 3-3 4 6"/></svg>
+            </div>
+            <span style="font-size:8.5px;color:#475569;">몸무게</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <span style="font-size:8.5px;color:#475569;">트렌드</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option D: Purple Gradient -->
+  <div>
+    <div class="pill pill-d">D. 그라디언트 (보라)</div>
+    <br><br>
+    <div class="phone" style="width:320px;border-radius:36px;box-shadow:0 20px 60px rgba(0,0,0,0.15);overflow:hidden;">
+      <div class="phone-label" style="background:linear-gradient(135deg,#7c3aed,#ec4899);">Option D — Gradient</div>
+      <div class="phone-screen" style="background:#faf5ff; min-height:340px;">
+        <div style="background:linear-gradient(160deg,#7c3aed 0%,#a855f7 50%,#ec4899 100%); padding:20px 16px 30px;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:4px;">2026년 5월 31일</div>
+          <div style="font-size:18px;font-weight:800;color:white;margin-bottom:16px;">안녕하세요!</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:rgba(255,255,255,0.15);border-radius:14px;padding:10px;backdrop-filter:blur(10px);">
+              <div style="font-size:8px;color:rgba(255,255,255,0.7);">공복혈당</div>
+              <div style="font-size:22px;font-weight:800;color:white;">98</div>
+              <div style="font-size:8px;color:#a5f3fc;">정상 ✓</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.15);border-radius:14px;padding:10px;">
+              <div style="font-size:8px;color:rgba(255,255,255,0.7);">몸무게</div>
+              <div style="font-size:22px;font-weight:800;color:white;">72.3</div>
+              <div style="font-size:8px;color:#a5f3fc;">▼ 0.2 kg</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:12px;margin-top:-14px;">
+          <div style="background:white;border-radius:18px;padding:12px;box-shadow:0 4px 20px rgba(124,58,237,0.1);margin-bottom:10px;">
+            <div style="font-size:10px;font-weight:700;color:#7c3aed;margin-bottom:8px;">오늘의 혈당</div>
+            <div class="glucose-grid">
+              <div class="glucose-card gc-green"><div class="gc-label">공복</div><div class="gc-value" style="color:#7c3aed;">98</div></div>
+              <div class="glucose-card" style="background:#fdf4ff;"><div class="gc-label">아침식후</div><div class="gc-value" style="color:#a855f7;">142</div></div>
+              <div class="glucose-card gc-blue"><div class="gc-label">점심식후</div><div class="gc-value" style="color:#7c3aed;">138</div></div>
+              <div class="glucose-card gc-gray"><div class="gc-label">저녁식후</div><div class="gc-value" style="font-size:12px;color:#9ca3af;margin-top:4px;">미입력</div></div>
+            </div>
+          </div>
+        </div>
+        <!-- Nav D -->
+        <div style="background:white;border-top:1px solid #f3e8ff;display:flex;padding:8px 4px 12px;justify-content:space-around;box-shadow:0 -4px 24px rgba(124,58,237,0.08);">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:32px;height:32px;background:linear-gradient(135deg,#7c3aed,#ec4899);border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(124,58,237,0.4);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </div>
+            <span style="font-size:8.5px;color:#7c3aed;font-weight:700;">대시보드</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v1h2a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h2V5a3 3 0 0 1 3-3z"/><path d="M9 12h6M9 16h4"/></svg>
+            </div>
+            <span style="font-size:8.5px;color:#9ca3af;">혈당</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+            </div>
+            <span style="font-size:8.5px;color:#9ca3af;">식단</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="2"><circle cx="12" cy="5" r="2"/><path d="M12 7v6l3 3"/></svg>
+            </div>
+            <span style="font-size:8.5px;color:#9ca3af;">운동</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="2"><path d="M3 17l4-8 4 5 3-3 4 6"/></svg>
+            </div>
+            <span style="font-size:8.5px;color:#9ca3af;">몸무게</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <div style="width:32px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <span style="font-size:8.5px;color:#9ca3af;">트렌드</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ───────────────────────────────── COLOR PALETTES ───────────────────────────────── -->
+<div class="section-title">컬러 팔레트 <span>각 옵션별 주요 색상</span></div>
+<div class="row" style="gap:32px; align-items:flex-start;">
+
+  <div>
+    <div class="pill pill-a" style="margin-bottom:12px;">A. 현재</div>
+    <div class="palette">
+      <div class="swatch-group"><div class="swatch" style="background:#2e6da4;"></div><div class="swatch-label">Primary</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#27ae60;"></div><div class="swatch-label">정상</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#f39c12;"></div><div class="swatch-label">주의</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#0d9488;"></div><div class="swatch-label">몸무게</div></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="pill pill-b" style="margin-bottom:12px;">B. 블루 메디컬 <span class="recommend-badge">추천</span></div>
+    <div class="palette">
+      <div class="swatch-group"><div class="swatch" style="background:#2563eb;"></div><div class="swatch-label">Primary</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#16a34a;"></div><div class="swatch-label">정상</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#d97706;"></div><div class="swatch-label">주의</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#0d9488;"></div><div class="swatch-label">몸무게</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#f1f5f9;"></div><div class="swatch-label">BG</div></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="pill pill-c" style="margin-bottom:12px;">C. 다크 Teal</div>
+    <div class="palette">
+      <div class="swatch-group"><div class="swatch" style="background:#0f172a;"></div><div class="swatch-label">BG Dark</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#1e293b;"></div><div class="swatch-label">Card</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#0d9488;"></div><div class="swatch-label">Active</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#5eead4;"></div><div class="swatch-label">Teal Lt</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#fbbf24;"></div><div class="swatch-label">주의</div></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="pill pill-d" style="margin-bottom:12px;">D. 그라디언트</div>
+    <div class="palette">
+      <div class="swatch-group"><div class="swatch" style="background:linear-gradient(135deg,#7c3aed,#ec4899);"></div><div class="swatch-label">Gradient</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#7c3aed;"></div><div class="swatch-label">Purple</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#a855f7;"></div><div class="swatch-label">Mid</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#ec4899;"></div><div class="swatch-label">Pink</div></div>
+      <div class="swatch-group"><div class="swatch" style="background:#f5f3ff;"></div><div class="swatch-label">BG</div></div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ───────────────────────────────── ICON SHEET ───────────────────────────────── -->
+<div class="section-title">SVG 아이콘 세트 <span>이모지 → 라인 아이콘 전환 시</span></div>
+<div class="icon-grid" style="max-width:700px;">
+
+  <div class="icon-item">
+    <div class="icon-circle" style="background:#eff6ff;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    </div>
+    <div class="icon-name">대시보드</div>
+  </div>
+
+  <div class="icon-item">
+    <div class="icon-circle" style="background:#fef2f2;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8"><path d="M12 2a3 3 0 0 1 3 3v1h2a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h2V5a3 3 0 0 1 3-3z"/><path d="M9 12h6M9 16h4"/></svg>
+    </div>
+    <div class="icon-name">혈당기록</div>
+  </div>
+
+  <div class="icon-item">
+    <div class="icon-circle" style="background:#fefce8;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="1.8"><path d="M3 6h18"/><path d="M8 6V4"/><path d="M16 6V4"/><circle cx="7.5" cy="11.5" r="1.5"/><circle cx="12" cy="11.5" r="1.5"/><circle cx="16.5" cy="11.5" r="1.5"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="12" cy="16.5" r="1.5"/><rect x="2" y="4" width="20" height="18" rx="2"/></svg>
+    </div>
+    <div class="icon-name">식단</div>
+  </div>
+
+  <div class="icon-item">
+    <div class="icon-circle" style="background:#f0fdf4;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8"><path d="M13 2L4.09 12.26A1 1 0 0 0 5 14h6v8l8.91-10.26A1 1 0 0 0 19 10h-6V2z"/></svg>
+    </div>
+    <div class="icon-name">운동</div>
+  </div>
+
+  <div class="icon-item">
+    <div class="icon-circle" style="background:#f0fdfa;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="1.8"><path d="M3 17l4-8 4 5 3-3 4 6"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
+    </div>
+    <div class="icon-name">몸무게</div>
+  </div>
+
+  <div class="icon-item">
+    <div class="icon-circle" style="background:#f5f3ff;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    <div class="icon-name">트렌드</div>
+  </div>
+
+  <div class="icon-item">
+    <div class="icon-circle" style="background:#fff7ed;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+    <div class="icon-name">프로필</div>
+  </div>
+
+  <div class="icon-item">
+    <div class="icon-circle" style="background:#fdf4ff;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </div>
+    <div class="icon-name">AI 분석</div>
+  </div>
+
+  <div class="icon-item">
+    <div class="icon-circle" style="background:#eff6ff;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    </div>
+    <div class="icon-name">검사결과</div>
+  </div>
+
+</div>
+
+<hr class="divider">
+
+<!-- ───────────────────────────────── COMPARISON TABLE ───────────────────────────────── -->
+<div class="section-title">옵션별 특징 비교</div>
+<div class="compare-table">
+  <table>
+    <tr>
+      <th>구분</th>
+      <th><span class="dot" style="background:#6b7280;"></span>A. 현재 (이모지)</th>
+      <th><span class="dot" style="background:#2563eb;"></span>B. 블루 메디컬 ⭐</th>
+      <th><span class="dot" style="background:#0d9488;"></span>C. 다크 Teal</th>
+      <th><span class="dot" style="background:#7c3aed;"></span>D. 그라디언트</th>
+    </tr>
+    <tr>
+      <td><strong>분위기</strong></td>
+      <td>친근·캐주얼</td>
+      <td>신뢰감·의료앱 느낌</td>
+      <td>프리미엄·모던</td>
+      <td>생동감·젊은 느낌</td>
+    </tr>
+    <tr>
+      <td><strong>가독성</strong></td>
+      <td>이모지 크기 불균일</td>
+      <td>일관된 선굵기로 깔끔</td>
+      <td>다크모드 야간 사용에 최적</td>
+      <td>그라디언트 헤더 시각적 임팩트</td>
+    </tr>
+    <tr>
+      <td><strong>구현 난이도</strong></td>
+      <td>현재 상태</td>
+      <td>낮음 (SVG 교체만)</td>
+      <td>중간 (다크 테마 전환)</td>
+      <td>낮음 (그라디언트 추가)</td>
+    </tr>
+    <tr>
+      <td><strong>당뇨관리 앱 적합성</strong></td>
+      <td>보통</td>
+      <td>높음 — 의료기관 신뢰감</td>
+      <td>높음 — 데이터 집중 유리</td>
+      <td>보통 — 의료앱치고 화려함</td>
+    </tr>
+    <tr>
+      <td><strong>추천 사용자</strong></td>
+      <td>—</td>
+      <td>전 연령대, 범용</td>
+      <td>야간 자주 사용하는 분</td>
+      <td>젊은 층, 피트니스 앱 선호</td>
+    </tr>
+  </table>
+</div>
+
+<br><br>
+<div style="background:white; border-radius:20px; padding:20px; box-shadow:0 2px 16px rgba(0,0,0,0.06); max-width:700px;">
+  <div style="font-size:14px;font-weight:700;margin-bottom:10px;">💡 추천 방향</div>
+  <div style="font-size:13px;color:#4b5563;line-height:1.8;">
+    <strong>B. 블루 메디컬</strong>을 추천드립니다.<br>
+    현재 파란색 테마(#2e6da4)를 유지하면서 이모지만 <strong>일관된 SVG 라인 아이콘</strong>으로 교체하는 방식입니다.<br>
+    변경 범위가 작고, 당뇨 관리 앱에 어울리는 신뢰감 있는 디자인을 빠르게 구현할 수 있습니다.<br><br>
+    원하시는 옵션이 있으면 말씀해주세요 — 바로 코드로 적용해드립니다.
+  </div>
+</div>
+
+<br><br>
+</body>
+</html>
