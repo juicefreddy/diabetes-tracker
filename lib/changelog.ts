@@ -8,9 +8,35 @@ export interface ChangelogEntry {
   items: string[]
 }
 
-export const CURRENT_VERSION = 'v1.4.2'
+export const CURRENT_VERSION = 'v1.5.1'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.5.1',
+    date: '2026-05-31 16:00',
+    type: 'fix',
+    title: 'OCR 심박수·고도 파싱 정확도 개선',
+    items: [
+      '최고심박수·평균심박수 동시 표시 시 평균값을 정확히 선택 (기존: 최고값 오인식)',
+      '"BPM" 레이블이 숫자 위에 오는 레이아웃(삼성헬스 등) 인식 추가',
+      '"회/분" 한국어 심박수 표기 지원',
+      '고도 단위(m) 없이 숫자만 있는 경우에도 등반고도 파싱 가능',
+      '"고도상승", "등반고도"(띄어쓰기 없음) 변형 패턴 추가',
+    ],
+  },
+  {
+    version: 'v1.5.0',
+    date: '2026-05-31 15:30',
+    type: 'feature',
+    title: 'Claude AI 분석 연계',
+    items: [
+      '대시보드 하단 "Claude AI로 데이터 분석하기" 버튼 추가',
+      '해당 날짜의 혈당·식단·운동 데이터를 자동 포맷하여 Claude에 전달',
+      '식단 체크리스트(방울토마토, 식사순서, 밥 섭취량) 포함',
+      '운동 거리·심박수·칼로리·고도상승 포함',
+      '날짜 선택기에서 다른 날짜 선택 시 해당 날짜 데이터로 분석',
+    ],
+  },
   {
     version: 'v1.4.2',
     date: '2026-05-30 10:30',
