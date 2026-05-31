@@ -92,23 +92,40 @@ function extractWorkoutData(text: string): WorkoutData {
     result.calories = Math.max(...calMatches.map(m => parseInt(m[1])))
   }
 
-  // 평균 심박수: BPM 앞의 숫자
-  const hrMatch = text.match(/(\d{2,3})\s*BPM/i) || text.match(/(\d{2,3})\s*bpm/)
-  if (hrMatch) {
-    const hr = parseInt(hrMatch[1])
+  // 평균 심박수
+  // 1단계: "평균" 레이블이 명시된 경우 우선 (최고심박수와 구분)
+  const hrAvgLabel =
+    text.match(/(?:평균|avg(?:erage)?)\s*(?:심박수?|heart\s*r(?:ate)?|HR)[^\d]{0,20}(\d{2,3})/i) ||
+    text.match(/(?:심박수?|heart\s*rate|Avg\s*HR)[^\d]{0,20}(\d{2,3})/i)
+  if (hrAvgLabel) {
+    const hr = parseInt(hrAvgLabel[1])
     if (hr >= 40 && hr <= 250) result.avg_heart_rate = hr
+  } else {
+    // 2단계: BPM 레이블 기준 수집 (숫자+BPM 또는 BPM+숫자) 후 최솟값 = 평균 추정
+    const allHr = [
+      ...[...text.matchAll(/(\d{2,3})\s*BPM/ig)].map(m => parseInt(m[1])),
+      ...[...text.matchAll(/BPM[\s:]{0,3}(\d{2,3})/ig)].map(m => parseInt(m[1])),
+      ...[...text.matchAll(/(\d{2,3})\s*회\s*\/\s*분/g)].map(m => parseInt(m[1])),
+    ].filter(v => v >= 40 && v <= 250)
+    if (allHr.length > 0) result.avg_heart_rate = Math.min(...allHr)
   }
 
-  // 고도 (상승): 한글 패턴
+  // 고도 (상승)
   const elevMatch =
-    text.match(/(?:등반|오르막|상승)?\s*고도[^0-9]*(\d+(?:[.,]\d+)?)\s*m/i) ||
+    // 한글 패턴 (단위 있음)
+    text.match(/(?:등반|오르막|상승)?\s*고도\s*상승?[^\d]{0,15}(\d+(?:[.,]\d+)?)\s*m/i) ||
+    text.match(/(?:등반|오르막|상승)?\s*고도[^\d]{0,15}(\d+(?:[.,]\d+)?)\s*m/i) ||
     text.match(/(\d+(?:[.,]\d+)?)\s*m\s*(?:상승|고도|등반)/i) ||
-    text.match(/상승\s*고도[^0-9]*(\d+)/i) ||
-    text.match(/등반[^0-9]*(\d+(?:[.,]\d+)?)\s*m/i) ||
+    // 한글 패턴 (단위 없음 — 레이블이 명시적이면 숫자만 있어도 허용)
+    text.match(/고도\s*상승[^\d]{0,15}(\d+(?:[.,]\d+)?)/i) ||
+    text.match(/상승\s*고도[^\d]{0,15}(\d+(?:[.,]\d+)?)/i) ||
+    text.match(/등반\s*고도[^\d]{0,15}(\d+(?:[.,]\d+)?)/i) ||
+    text.match(/등반[^\d]{0,10}(\d+(?:[.,]\d+)?)\s*m/i) ||
     // 영어 패턴 (Garmin, Strava, Apple Fitness 등)
-    text.match(/elev(?:ation)?(?:\s*gain)?[^0-9]*(\d+(?:[.,]\d+)?)\s*m/i) ||
-    text.match(/total\s*ascent[^0-9]*(\d+(?:[.,]\d+)?)\s*m/i) ||
-    text.match(/ascent[^0-9]*(\d+(?:[.,]\d+)?)\s*m/i)
+    text.match(/elev(?:ation)?(?:\s*gain)?[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*m/i) ||
+    text.match(/elev(?:ation)?(?:\s*gain)?[^\d]{0,20}(\d+(?:[.,]\d+)?)/i) ||
+    text.match(/total\s*ascent[^\d]{0,20}(\d+(?:[.,]\d+)?)/i) ||
+    text.match(/ascent[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*m/i)
   if (elevMatch) {
     result.elevation = parseFloat(elevMatch[1].replace(',', '.'))
   }
