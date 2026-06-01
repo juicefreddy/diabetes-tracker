@@ -51,10 +51,17 @@ export function getExerciseTypeLabel(type: string): string {
     stepper: '스테퍼',
     band: '밴드운동',
     cycling: '자전거',
+    squat: '스쿼트',
+    lunge: '런지',
+    pushup: '푸시업',
+    plank: '플랭크',
     other: '기타',
   }
   return labels[type] ?? type
 }
+
+export const STRENGTH_TYPES = new Set(['squat', 'lunge', 'pushup', 'plank'])
+export const isStrengthType = (type: string): boolean => STRENGTH_TYPES.has(type)
 
 export function getTimeOfDayLabel(time: string): string {
   const labels: Record<string, string> = {

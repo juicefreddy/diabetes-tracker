@@ -8,9 +8,22 @@ export interface ChangelogEntry {
   items: string[]
 }
 
-export const CURRENT_VERSION = 'v1.7.0'
+export const CURRENT_VERSION = 'v1.8.0'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.8.0',
+    date: '2026-06-01 00:00',
+    type: 'feature',
+    title: '근력 운동 기록 추가 (세트 × 횟수)',
+    items: [
+      '스쿼트·런지·푸시업·플랭크 종목 추가',
+      '근력 운동 선택 시 세트수·횟수 입력 필드 표시 (시간·거리 대신)',
+      '실시간 미리보기: "스쿼트 3세트 × 15회 = 총 45회"',
+      '운동 목록에서 근력 운동은 💪 아이콘과 세트×횟수 형식으로 표시',
+      '유산소(걷기·스테퍼·밴드·자전거)와 근력 그룹 구분 선택 UI',
+    ],
+  },
   {
     version: 'v1.7.0',
     date: '2026-05-31 18:00',
