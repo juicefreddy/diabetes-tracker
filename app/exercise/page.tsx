@@ -13,14 +13,19 @@ const TIME_OF_DAY = ['morning', 'after_lunch', 'after_dinner', 'evening'] as con
 const INTENSITY = ['low', 'medium', 'high'] as const
 const INTENSITY_LABEL: Record<string, string> = { low: '낮음', medium: '보통', high: '높음' }
 
-type ExerciseType = typeof CARDIO_TYPES[number] | typeof STRENGTH_TYPES[number] | 'other'
+type ExerciseType = typeof CARDIO_TYPES[number] | typeof STRENGTH_TYPES[number] | 'other' | 'other_strength'
 type TimeOfDay = typeof TIME_OF_DAY[number]
 type Intensity = typeof INTENSITY[number]
 
 interface EditState {
   id: string; type: string; time_of_day: string; duration_minutes: string
-  sets: string; reps: string
+  sets: string; reps: string; memo: string
   distance_km: string; avg_heart_rate: string; elevation: string; calories: string; intensity: string
+}
+
+function exerciseDisplayName(type: string, memo?: string): string {
+  if ((type === 'other' || type === 'other_strength') && memo) return memo
+  return getExerciseTypeLabel(type)
 }
 
 export default function ExercisePage() {
@@ -32,6 +37,7 @@ export default function ExercisePage() {
   const [duration, setDuration] = useState('')
   const [sets, setSets] = useState('')
   const [reps, setReps] = useState('')
+  const [memo, setMemo] = useState('')
   const [distance, setDistance] = useState('')
   const [heartRate, setHeartRate] = useState('')
   const [elevation, setElevation] = useState('')
@@ -65,7 +71,7 @@ export default function ExercisePage() {
   const isStrength = isStrengthType(type)
 
   function clearInputs() {
-    setDuration(''); setSets(''); setReps('')
+    setDuration(''); setSets(''); setReps(''); setMemo('')
     setDistance(''); setHeartRate(''); setElevation(''); setCalories('')
   }
 
@@ -106,6 +112,7 @@ export default function ExercisePage() {
       elevation: elevation ? Math.round(Number(elevation)) : null,
       intensity,
       calories: calories ? Math.round(Number(calories)) : null,
+      memo: memo || null,
       created_at: new Date().toISOString(),
     })
     setSaving(false)
@@ -121,6 +128,7 @@ export default function ExercisePage() {
       duration_minutes: s.duration_minutes ? String(s.duration_minutes) : '',
       sets: s.sets ? String(s.sets) : '',
       reps: s.reps ? String(s.reps) : '',
+      memo: s.memo ?? '',
       distance_km: s.distance_km ? String(s.distance_km) : '',
       avg_heart_rate: s.avg_heart_rate ? String(s.avg_heart_rate) : '',
       elevation: s.elevation ? String(s.elevation) : '',
@@ -142,6 +150,7 @@ export default function ExercisePage() {
       elevation: editing.elevation ? Math.round(Number(editing.elevation)) : null,
       calories: editing.calories ? Math.round(Number(editing.calories)) : null,
       intensity: editing.intensity,
+      memo: editing.memo || null,
     }).eq('id', editing.id)
     if (!error) {
       setAllRecords(prev => prev.map(r => r.id === editing.id ? {
@@ -156,6 +165,7 @@ export default function ExercisePage() {
         elevation: editing.elevation ? Number(editing.elevation) : undefined,
         calories: editing.calories ? Number(editing.calories) : undefined,
         intensity: editing.intensity as Exercise['intensity'],
+        memo: editing.memo || undefined,
       } : r))
       setEditing(null); showToast('수정되었습니다!')
     } else showToast('수정 실패: ' + error.message)
@@ -218,6 +228,10 @@ export default function ExercisePage() {
                     {getExerciseTypeLabel(t)}
                   </button>
                 ))}
+                <button onClick={() => { setType('other'); clearInputs() }}
+                  className={`h-10 px-4 rounded-xl text-sm font-medium transition-colors ${type === 'other' ? 'bg-[#2e6da4] text-white' : 'bg-gray-100 text-gray-600'}`}>
+                  기타
+                </button>
               </div>
             </div>
             <div>
@@ -229,8 +243,8 @@ export default function ExercisePage() {
                     {getExerciseTypeLabel(t)}
                   </button>
                 ))}
-                <button onClick={() => { setType('other'); clearInputs() }}
-                  className={`h-10 px-4 rounded-xl text-sm font-medium transition-colors ${type === 'other' ? 'bg-[#2e6da4] text-white' : 'bg-gray-100 text-gray-600'}`}>
+                <button onClick={() => { setType('other_strength'); clearInputs() }}
+                  className={`h-10 px-4 rounded-xl text-sm font-medium transition-colors ${type === 'other_strength' ? 'bg-[#2e6da4] text-white' : 'bg-gray-100 text-gray-600'}`}>
                   기타
                 </button>
               </div>
@@ -252,6 +266,14 @@ export default function ExercisePage() {
           {/* 근력 운동 입력 */}
           {isStrength ? (
             <div className="space-y-3">
+              {/* 근력 기타: 운동 이름 입력 */}
+              {type === 'other_strength' && (
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">운동 이름</label>
+                  <input type="text" value={memo} onChange={e => setMemo(e.target.value)} placeholder="예: 데드리프트, 덤벨컬 등"
+                    className="w-full h-12 border border-gray-200 rounded-xl px-3 text-gray-800 focus:outline-none focus:border-[#2e6da4]" />
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">세트 수 *</label>
@@ -274,7 +296,7 @@ export default function ExercisePage() {
               {(sets || reps) && (
                 <div className="bg-blue-50 rounded-xl px-4 py-2 text-center">
                   <span className="text-[#2e6da4] font-bold text-sm">
-                    {getExerciseTypeLabel(type)} {sets || '?'}세트 × {reps || '?'}회
+                    {memo || getExerciseTypeLabel(type)} {sets || '?'}세트 × {reps || '?'}회
                     {sets && reps ? ` = 총 ${Math.round(Number(sets) * Number(reps))}회` : ''}
                   </span>
                 </div>
@@ -294,20 +316,30 @@ export default function ExercisePage() {
             </div>
           ) : (
             /* 유산소/기타 입력 */
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: '운동 시간 (분) *', val: duration, set: setDuration, ph: '30', decimal: false },
-                { label: '거리 (km)', val: distance, set: setDistance, ph: '3.5', decimal: true },
-                { label: '평균심박수 (bpm)', val: heartRate, set: setHeartRate, ph: '120', decimal: false },
-                { label: '고도 (m)', val: elevation, set: setElevation, ph: '50', decimal: false },
-                { label: '칼로리 (kcal)', val: calories, set: setCalories, ph: '200', decimal: false },
-              ].map(({ label, val, set, ph, decimal }) => (
-                <div key={label}>
-                  <label className="block text-xs text-gray-500 mb-1">{label}</label>
-                  <input type="number" inputMode={decimal ? 'decimal' : 'numeric'} step={decimal ? 'any' : '1'} value={val} onChange={e => set(e.target.value)} placeholder={ph}
+            <div className="space-y-3">
+              {/* 유산소 기타: 운동 이름 입력 */}
+              {type === 'other' && (
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">운동 이름</label>
+                  <input type="text" value={memo} onChange={e => setMemo(e.target.value)} placeholder="예: 줄넘기, 수영, 등산 등"
                     className="w-full h-12 border border-gray-200 rounded-xl px-3 text-gray-800 focus:outline-none focus:border-[#2e6da4]" />
                 </div>
-              ))}
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: '운동 시간 (분) *', val: duration, set: setDuration, ph: '30', decimal: false },
+                  { label: '거리 (km)', val: distance, set: setDistance, ph: '3.5', decimal: true },
+                  { label: '평균심박수 (bpm)', val: heartRate, set: setHeartRate, ph: '120', decimal: false },
+                  { label: '고도 (m)', val: elevation, set: setElevation, ph: '50', decimal: false },
+                  { label: '칼로리 (kcal)', val: calories, set: setCalories, ph: '200', decimal: false },
+                ].map(({ label, val, set, ph, decimal }) => (
+                  <div key={label}>
+                    <label className="block text-xs text-gray-500 mb-1">{label}</label>
+                    <input type="number" inputMode={decimal ? 'decimal' : 'numeric'} step={decimal ? 'any' : '1'} value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                      className="w-full h-12 border border-gray-200 rounded-xl px-3 text-gray-800 focus:outline-none focus:border-[#2e6da4]" />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -355,14 +387,38 @@ export default function ExercisePage() {
                     <div key={s.id} className="bg-gray-50 rounded-xl p-3 space-y-2">
                       {editing?.id === s.id ? (
                         <div className="space-y-2">
-                          <div className="flex flex-wrap gap-2">
-                            {([...CARDIO_TYPES, ...STRENGTH_TYPES, 'other'] as string[]).map(t => (
-                              <button key={t} onClick={() => setEditing(p => p ? { ...p, type: t } : null)}
-                                className={`h-8 px-3 rounded-lg text-xs font-medium ${editing!.type === t ? 'bg-[#2e6da4] text-white' : 'bg-white text-gray-600'}`}>
-                                {getExerciseTypeLabel(t)}
-                              </button>
-                            ))}
+                          {/* 수정 — 종류 선택 */}
+                          <div className="space-y-1">
+                            <p className="text-xs text-gray-400">유산소</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {([...CARDIO_TYPES, 'other'] as string[]).map(t => (
+                                <button key={t} onClick={() => setEditing(p => p ? { ...p, type: t } : null)}
+                                  className={`h-8 px-3 rounded-lg text-xs font-medium ${editing!.type === t ? 'bg-[#2e6da4] text-white' : 'bg-white text-gray-600'}`}>
+                                  {getExerciseTypeLabel(t)}
+                                </button>
+                              ))}
+                            </div>
+                            <p className="text-xs text-gray-400 mt-1">근력</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {([...STRENGTH_TYPES, 'other_strength'] as string[]).map(t => (
+                                <button key={t} onClick={() => setEditing(p => p ? { ...p, type: t } : null)}
+                                  className={`h-8 px-3 rounded-lg text-xs font-medium ${editing!.type === t ? 'bg-[#2e6da4] text-white' : 'bg-white text-gray-600'}`}>
+                                  {getExerciseTypeLabel(t)}
+                                </button>
+                              ))}
+                            </div>
                           </div>
+                          {/* 기타 운동 이름 */}
+                          {(editing.type === 'other' || editing.type === 'other_strength') && (
+                            <div>
+                              <label className="text-xs text-gray-500">운동 이름</label>
+                              <input type="text"
+                                value={editing.memo}
+                                onChange={e => setEditing(p => p ? { ...p, memo: e.target.value } : null)}
+                                placeholder="운동 이름 입력"
+                                className="w-full h-9 border border-gray-200 rounded-lg px-2 text-sm focus:outline-none" />
+                            </div>
+                          )}
                           {isStrengthType(editing.type) ? (
                             <div className="grid grid-cols-2 gap-2">
                               {[
@@ -410,7 +466,7 @@ export default function ExercisePage() {
                             <div>
                               <div className="flex items-center gap-2">
                                 <p className="text-sm font-medium text-gray-800">
-                                  {getExerciseTypeLabel(s.type)} · {getTimeOfDayLabel(s.time_of_day)}
+                                  {exerciseDisplayName(s.type, s.memo)} · {getTimeOfDayLabel(s.time_of_day)}
                                 </p>
                                 {s.created_at && <p className="text-xs text-gray-400">{formatTime(s.created_at)}</p>}
                               </div>

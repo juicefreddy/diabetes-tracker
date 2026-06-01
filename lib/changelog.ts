@@ -8,9 +8,21 @@ export interface ChangelogEntry {
   items: string[]
 }
 
-export const CURRENT_VERSION = 'v1.8.0'
+export const CURRENT_VERSION = 'v1.9.0'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.9.0',
+    date: '2026-06-01 01:00',
+    type: 'feature',
+    title: '유산소·근력 각각 기타 항목 추가 및 운동 이름 입력',
+    items: [
+      '유산소 그룹에 "기타" 추가 — 운동 이름 직접 입력 + 시간·거리·심박·고도·칼로리 동일 입력',
+      '근력 그룹에 "기타" 추가 — 운동 이름 직접 입력 + 세트×횟수 입력',
+      '기록 목록에서 입력한 운동 이름이 그대로 표시됨',
+      '수정 화면에서도 유산소/근력 기타 이름 수정 가능',
+    ],
+  },
   {
     version: 'v1.8.0',
     date: '2026-06-01 00:00',

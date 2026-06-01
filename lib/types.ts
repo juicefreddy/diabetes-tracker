@@ -22,7 +22,7 @@ export interface Meal {
 export interface Exercise {
   id: string
   date: string
-  type: 'walking' | 'stepper' | 'band' | 'cycling' | 'squat' | 'lunge' | 'pushup' | 'plank' | 'other'
+  type: 'walking' | 'stepper' | 'band' | 'cycling' | 'squat' | 'lunge' | 'pushup' | 'plank' | 'other' | 'other_strength'
   time_of_day: 'morning' | 'after_lunch' | 'after_dinner' | 'evening'
   duration_minutes: number
   sets?: number
@@ -32,6 +32,7 @@ export interface Exercise {
   elevation?: number
   intensity?: 'low' | 'medium' | 'high'
   calories?: number
+  memo?: string
   created_at?: string
 }
 
