@@ -10,8 +10,9 @@ import { getStoredTZ, formatTimeInTZ } from '@/lib/timezone'
 import { CURRENT_VERSION } from '@/lib/changelog'
 
 const MiniLineChart = dynamic(() => import('./components/charts/MiniLineChart'), { ssr: false })
+const DashboardGlucoseChart = dynamic(() => import('./components/charts/DashboardGlucoseChart'), { ssr: false })
 
-interface ChartPoint { date: string; value: number | null }
+interface ChartPoint { date: string; fasting: number | null; maxPost: number | null; spike: number | null }
 interface MealRecord {
   id: string
   meal_type: string
@@ -46,8 +47,8 @@ export default function DashboardPage() {
       supabase.from('blood_glucose').select('*').eq('date', selectedDate).order('created_at'),
       supabase.from('exercise').select('*').eq('date', selectedDate),
       supabase.from('meals').select('id, meal_type, foods, tomato_check, meal_order_check, rice_amount, created_at').eq('date', selectedDate),
-      supabase.from('blood_glucose').select('date, value')
-        .gte('date', getDateDaysAgo(6)).eq('time_point', 'fasting').order('date'),
+      supabase.from('blood_glucose').select('date, value, time_point')
+        .gte('date', getDateDaysAgo(6)).order('date'),
       supabase.from('weight_logs').select('date, weight_kg').lte('date', selectedDate).order('date', { ascending: false }).limit(2),
     ])
     setGlucose((glucoseRes.data as BloodGlucose[]) ?? [])
@@ -60,14 +61,21 @@ export default function DashboardPage() {
     setTodayWeight(todayRow?.weight_kg ?? null)
     setPrevWeight(prevRow?.weight_kg ?? null)
 
-    const raw = (chartRes.data ?? []) as { date: string; value: number }[]
-    const grouped: Record<string, number[]> = {}
-    raw.forEach((r) => { if (!grouped[r.date]) grouped[r.date] = []; grouped[r.date].push(r.value) })
+    const raw = (chartRes.data ?? []) as { date: string; value: number; time_point: string }[]
+    const grouped: Record<string, { fasting?: number; posts: number[] }> = {}
+    raw.forEach(r => {
+      if (!grouped[r.date]) grouped[r.date] = { posts: [] }
+      if (r.time_point === 'fasting') grouped[r.date].fasting = r.value
+      else grouped[r.date].posts.push(r.value)
+    })
     const points: ChartPoint[] = []
     for (let i = 6; i >= 0; i--) {
       const d = getDateDaysAgo(i)
-      const vals = grouped[d]
-      points.push({ date: d, value: vals ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null })
+      const day = grouped[d] ?? { posts: [] }
+      const fasting = day.fasting ?? null
+      const maxPost = day.posts.length > 0 ? Math.max(...day.posts) : null
+      const spike = fasting !== null && maxPost !== null ? maxPost - fasting : null
+      points.push({ date: d, fasting, maxPost, spike })
     }
     setChartData(points)
     setLoading(false)
@@ -302,8 +310,19 @@ export default function DashboardPage() {
 
       {/* 7일 차트 */}
       <div className="bg-white rounded-2xl shadow-sm p-4">
-        <h2 className="text-sm font-semibold text-gray-600 mb-3">7일 공복혈당 추이</h2>
-        <MiniLineChart data={chartData} />
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold text-gray-600">7일 혈당 추이</h2>
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-4 h-[3px] rounded bg-[#2e6da4]" />공복
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-4 h-px bg-orange-400" style={{ borderTop: '1.5px dashed #f97316' }} />식후최고
+            </span>
+            <span className="text-orange-400 font-semibold">+N 상승폭</span>
+          </div>
+        </div>
+        <DashboardGlucoseChart data={chartData} />
       </div>
 
       {/* 빠른 입력 버튼 */}
