@@ -8,9 +8,22 @@ export interface ChangelogEntry {
   items: string[]
 }
 
-export const CURRENT_VERSION = 'v1.10.0'
+export const CURRENT_VERSION = 'v1.11.0'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.11.0',
+    date: '2026-06-02 01:00',
+    type: 'feature',
+    title: '대시보드 혈당 차트 개선 — 공복+식후 통합 표시',
+    items: [
+      '공복혈당: 굵은 파란 선 + 흰 테두리 점으로 기준선 강조',
+      '식후 최고혈당(당일 최대값): 주황 점선으로 함께 표시',
+      '공복 대비 상승폭(+XX)을 식후최고 점 위에 표시',
+      '툴팁에 공복·식후최고·상승폭 모두 표시',
+      '기준선: 공복 정상(99, 초록 점선), 식후 정상(140, 주황 점선)',
+    ],
+  },
   {
     version: 'v1.10.0',
     date: '2026-06-02 00:00',
