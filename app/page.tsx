@@ -5,7 +5,8 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { BloodGlucose, Exercise } from '@/lib/types'
-import { judgeGlucose, getTimePointLabel, getTodayString, formatDate } from '@/lib/utils'
+import { judgeGlucose, getTimePointLabel, getTodayString, formatDate, getExerciseTypeLabel, isStrengthType } from '@/lib/utils'
+import { getStoredTZ, formatTimeInTZ } from '@/lib/timezone'
 import { CURRENT_VERSION } from '@/lib/changelog'
 
 const MiniLineChart = dynamic(() => import('./components/charts/MiniLineChart'), { ssr: false })
@@ -18,10 +19,12 @@ interface MealRecord {
   tomato_check?: boolean
   meal_order_check?: boolean
   rice_amount?: string
+  created_at?: string
 }
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(getTodayString())
+  const [tz] = useState(() => getStoredTZ())
   const [glucose, setGlucose] = useState<BloodGlucose[]>([])
   const [exercise, setExercise] = useState<Exercise[]>([])
   const [meals, setMeals] = useState<MealRecord[]>([])
@@ -42,7 +45,7 @@ export default function DashboardPage() {
     const [glucoseRes, exerciseRes, mealsRes, chartRes, weightRes] = await Promise.all([
       supabase.from('blood_glucose').select('*').eq('date', selectedDate).order('created_at'),
       supabase.from('exercise').select('*').eq('date', selectedDate),
-      supabase.from('meals').select('id, meal_type, foods, tomato_check, meal_order_check, rice_amount').eq('date', selectedDate),
+      supabase.from('meals').select('id, meal_type, foods, tomato_check, meal_order_check, rice_amount, created_at').eq('date', selectedDate),
       supabase.from('blood_glucose').select('date, value')
         .gte('date', getDateDaysAgo(6)).eq('time_point', 'fasting').order('date'),
       supabase.from('weight_logs').select('date, weight_kg').lte('date', selectedDate).order('date', { ascending: false }).limit(2),
@@ -106,29 +109,45 @@ export default function DashboardPage() {
     } else {
       const sorted = [...meals].sort((a, b) => mealOrder.indexOf(a.meal_type) - mealOrder.indexOf(b.meal_type))
       sorted.forEach(m => {
+        const timeStr = m.created_at ? ` (${formatTimeInTZ(m.created_at, tz)})` : ''
         const extras: string[] = []
         if (m.rice_amount && m.rice_amount !== 'none') extras.push(`밥 ${riceLabels[m.rice_amount] ?? m.rice_amount}`)
         if (m.tomato_check) extras.push('방울토마토 ✓')
         if (m.meal_order_check) extras.push('식사순서 준수 ✓')
         const extraStr = extras.length > 0 ? ` [${extras.join(', ')}]` : ''
-        lines.push(`- ${mealLabels[m.meal_type] ?? m.meal_type}: ${m.foods.join(', ')}${extraStr}`)
+        lines.push(`- ${mealLabels[m.meal_type] ?? m.meal_type}${timeStr}: ${m.foods.join(', ')}${extraStr}`)
       })
     }
     lines.push('')
 
     lines.push('【운동】')
-    const exTypeLabels: Record<string, string> = { walking: '걷기', stepper: '스테퍼', band: '밴드운동', cycling: '자전거', other: '기타' }
     const todLabels: Record<string, string> = { morning: '아침', after_lunch: '점심후', after_dinner: '저녁후', evening: '귀가' }
     if (exercise.length === 0) {
       lines.push('- 없음')
     } else {
       exercise.forEach(e => {
-        const parts = [`${exTypeLabels[e.type] ?? e.type} ${e.duration_minutes}분 (${todLabels[e.time_of_day] ?? e.time_of_day})`]
-        if (e.distance_km) parts.push(`${e.distance_km}km`)
-        if (e.avg_heart_rate) parts.push(`심박 ${e.avg_heart_rate}bpm`)
-        if (e.calories) parts.push(`${e.calories}kcal`)
-        if (e.elevation) parts.push(`고도상승 ${e.elevation}m`)
-        lines.push(`- ${parts.join(', ')}`)
+        const strength = isStrengthType(e.type)
+        const name = (e.type === 'other' || e.type === 'other_strength') && e.memo
+          ? e.memo
+          : getExerciseTypeLabel(e.type)
+        const timeStr = e.created_at ? ` ${formatTimeInTZ(e.created_at, tz)}` : ''
+        const todStr = todLabels[e.time_of_day] ?? e.time_of_day
+        if (strength) {
+          const setRep = e.sets && e.reps
+            ? `${e.sets}세트 × ${e.reps}회 = 총 ${e.sets * e.reps}회`
+            : e.sets ? `${e.sets}세트` : e.reps ? `${e.reps}회` : ''
+          const parts = [`${name} (${todStr}${timeStr})`, setRep]
+          if (e.duration_minutes) parts.push(`${e.duration_minutes}분`)
+          if (e.calories) parts.push(`${e.calories}kcal`)
+          lines.push(`- ${parts.filter(Boolean).join(', ')}`)
+        } else {
+          const parts = [`${name} ${e.duration_minutes}분 (${todStr}${timeStr})`]
+          if (e.distance_km) parts.push(`${e.distance_km}km`)
+          if (e.avg_heart_rate) parts.push(`심박 ${e.avg_heart_rate}bpm`)
+          if (e.calories) parts.push(`${e.calories}kcal`)
+          if (e.elevation) parts.push(`고도상승 ${e.elevation}m`)
+          lines.push(`- ${parts.join(', ')}`)
+        }
       })
     }
     lines.push('')

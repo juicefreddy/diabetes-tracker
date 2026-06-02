@@ -8,9 +8,21 @@ export interface ChangelogEntry {
   items: string[]
 }
 
-export const CURRENT_VERSION = 'v1.9.0'
+export const CURRENT_VERSION = 'v1.10.0'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.10.0',
+    date: '2026-06-02 00:00',
+    type: 'feature',
+    title: 'AI 분석에 식사시간·운동시간 포함',
+    items: [
+      'Claude AI 분석 전달 시 각 식사의 기록 시간 포함 (예: 아침 (07:32))',
+      '운동 항목에 기록 시간 포함 (예: 걷기 30분 (저녁후 19:45))',
+      '근력 운동 세트×횟수 정보도 AI 분석에 포함',
+      '기타 운동 입력 시 사용자가 직접 입력한 이름 전달',
+    ],
+  },
   {
     version: 'v1.9.0',
     date: '2026-06-01 01:00',
