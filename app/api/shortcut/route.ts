@@ -242,13 +242,19 @@ function buildShortcutPlist(token: string, apiBase: string): string {
 
     <dict>
       <key>WFWorkflowActionIdentifier</key>
-      <string>is.workflow.actions.alert</string>
+      <string>is.workflow.actions.showresult</string>
       <key>WFWorkflowActionParameters</key>
       <dict>
-        <key>WFAlertActionMessage</key>
-        ${litText('✅ 운동 기록이 저장되었습니다!')}
-        <key>WFAlertActionCancelButtonShown</key>
-        <false/>
+        <key>Text</key>
+        <dict>
+          <key>Value</key>
+          <dict>
+            <key>string</key>
+            <string>✅ 운동 기록이 저장되었습니다!</string>
+          </dict>
+          <key>WFSerializationType</key>
+          <string>WFTextTokenString</string>
+        </dict>
       </dict>
     </dict>
 
@@ -271,8 +277,8 @@ export async function GET(req: NextRequest) {
   return new NextResponse(plist, {
     status: 200,
     headers: {
-      'Content-Type': 'application/octet-stream',
-      'Content-Disposition': 'attachment; filename="운동기록단축어.shortcut"',
+      'Content-Type': 'application/vnd.apple.shortcut',
+      'Content-Disposition': 'inline; filename="workout.shortcut"',
     },
   })
 }
