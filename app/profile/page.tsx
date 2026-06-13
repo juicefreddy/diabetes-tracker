@@ -14,22 +14,42 @@ interface Profile {
   medications?: string[]
   comorbidities?: string[]
   protein_goal_g?: number
+  sync_token?: string
 }
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile>({})
   const [changelogOpen, setChangelogOpen] = useState(false)
+  const [shortcutGuideOpen, setShortcutGuideOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
   const [medInput, setMedInput] = useState('')
   const [comorInput, setComorInput] = useState('')
   const [timezone, setTimezone] = useState(DEFAULT_TZ)
+  const [appUrl, setAppUrl] = useState('')
+
+  useEffect(() => {
+    setAppUrl(window.location.origin)
+  }, [])
 
   useEffect(() => {
     fetchProfile()
     setTimezone(getStoredTZ())
   }, [])
+
+  function generateToken() {
+    const token = crypto.randomUUID()
+    setProfile(p => ({ ...p, sync_token: token }))
+    setToast('토큰이 생성되었습니다. 저장 버튼을 눌러주세요.')
+    setTimeout(() => setToast(''), 2500)
+  }
+
+  async function copyToClipboard(text: string, label: string) {
+    await navigator.clipboard.writeText(text)
+    setToast(`${label} 복사됨!`)
+    setTimeout(() => setToast(''), 1500)
+  }
 
   function handleTimezoneChange(tz: string) {
     setTimezone(tz)
@@ -251,6 +271,87 @@ export default function ProfilePage() {
           ))}
         </select>
         <p className="text-xs text-gray-400">혈당·식단·운동 기록의 시간 표시에 적용됩니다.</p>
+      </div>
+
+      {/* iPhone 단축어 연동 */}
+      <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-gray-600">📱 iPhone 단축어 연동</h2>
+        <p className="text-xs text-gray-500">Apple Health 운동 기록을 단축어 앱으로 자동 저장할 수 있습니다.</p>
+
+        {/* 토큰 */}
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">연동 토큰</label>
+          {profile.sync_token ? (
+            <div className="flex gap-2">
+              <div className="flex-1 h-12 border border-gray-200 rounded-xl px-3 flex items-center bg-gray-50">
+                <span className="text-xs text-gray-500 font-mono truncate">{profile.sync_token}</span>
+              </div>
+              <button onClick={() => copyToClipboard(profile.sync_token!, '토큰')}
+                className="h-12 px-3 bg-blue-50 text-[#2e6da4] rounded-xl text-xs font-medium">복사</button>
+              <button onClick={generateToken}
+                className="h-12 px-3 bg-gray-100 text-gray-600 rounded-xl text-xs font-medium">재생성</button>
+            </div>
+          ) : (
+            <button onClick={generateToken}
+              className="w-full h-12 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 font-medium">
+              토큰 생성하기
+            </button>
+          )}
+        </div>
+
+        {/* API URL */}
+        {appUrl && (
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">API 주소</label>
+            <div className="flex gap-2">
+              <div className="flex-1 h-12 border border-gray-200 rounded-xl px-3 flex items-center bg-gray-50">
+                <span className="text-xs text-gray-500 font-mono truncate">{appUrl}/api/sync-workout</span>
+              </div>
+              <button onClick={() => copyToClipboard(`${appUrl}/api/sync-workout`, 'API 주소')}
+                className="h-12 px-3 bg-blue-50 text-[#2e6da4] rounded-xl text-xs font-medium">복사</button>
+            </div>
+          </div>
+        )}
+
+        {/* 단축어 설정 가이드 */}
+        <button onClick={() => setShortcutGuideOpen(o => !o)}
+          className="w-full flex items-center justify-between py-1">
+          <span className="text-xs font-medium text-[#2e6da4]">단축어 설정 방법 보기</span>
+          <span className="text-gray-400 text-xs">{shortcutGuideOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {shortcutGuideOpen && (
+          <div className="bg-gray-50 rounded-xl p-3 space-y-3 text-xs text-gray-600">
+            <p className="font-semibold text-gray-700">iPhone 단축어 앱에서 새 단축어를 만드세요:</p>
+            <ol className="space-y-2 list-decimal list-inside">
+              <li><span className="font-medium">단축어 앱</span> → 우상단 <span className="font-medium">+</span> → 새 단축어</li>
+              <li>액션 추가 → <span className="bg-white px-1.5 py-0.5 rounded font-mono">헬스 &gt; 운동 가져오기</span>
+                <br /><span className="text-gray-400 pl-4">정렬: 종료 시간 / 내림차순 / 제한: 1개</span></li>
+              <li><span className="bg-white px-1.5 py-0.5 rounded font-mono">변수로 설정</span> → 이름: <span className="font-medium">workout</span></li>
+              <li><span className="bg-white px-1.5 py-0.5 rounded font-mono">딕셔너리</span> 액션 추가:
+                <div className="mt-1 ml-4 space-y-0.5 font-mono bg-white rounded-lg p-2 text-gray-500">
+                  <div>token → <span className="text-blue-600">[토큰 붙여넣기]</span></div>
+                  <div>type → workout의 <span className="text-blue-600">운동 유형</span></div>
+                  <div>start_time → workout의 <span className="text-blue-600">시작 날짜</span></div>
+                  <div>date → workout의 시작 날짜 <span className="text-blue-600">(형식: yyyy-MM-dd)</span></div>
+                  <div>duration_minutes → workout의 <span className="text-blue-600">소요 시간(분)</span></div>
+                  <div>distance_km → workout의 <span className="text-blue-600">총 거리(km)</span></div>
+                  <div>calories → workout의 <span className="text-blue-600">활성 칼로리</span></div>
+                  <div>avg_heart_rate → workout의 <span className="text-blue-600">평균 심박수</span></div>
+                </div>
+              </li>
+              <li><span className="bg-white px-1.5 py-0.5 rounded font-mono">URL에서 내용 가져오기</span>
+                <div className="mt-1 ml-4 space-y-0.5 bg-white rounded-lg p-2 text-gray-500">
+                  <div>URL: <span className="font-mono text-blue-600">{appUrl}/api/sync-workout</span></div>
+                  <div>방법: <span className="font-medium">POST</span></div>
+                  <div>요청 본문: <span className="font-medium">JSON</span> → [딕셔너리 변수]</div>
+                </div>
+              </li>
+              <li><span className="bg-white px-1.5 py-0.5 rounded font-mono">알림 표시</span> → &quot;운동 저장 완료 ✅&quot;</li>
+            </ol>
+            <p className="text-gray-400">운동 후 단축어를 탭하면 Apple Health 마지막 운동이 자동 저장됩니다.</p>
+          </div>
+        )}
       </div>
 
       <button
