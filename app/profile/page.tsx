@@ -299,14 +299,22 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* 단축어 다운로드 버튼 */}
+        {/* 단축어 설치 버튼 */}
         {profile.sync_token && appUrl && (
-          <a
-            href={`${appUrl}/api/shortcut?token=${profile.sync_token}&url=${encodeURIComponent(appUrl)}`}
-            className="w-full h-12 bg-gradient-to-r from-[#2e6da4] to-[#1a5a8a] text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
-          >
-            📲 단축어 파일 다운로드
-          </a>
+          <div className="space-y-2">
+            <a
+              href={`shortcuts://import-workflow?url=${encodeURIComponent(`${appUrl}/api/shortcut?token=${profile.sync_token}&url=${encodeURIComponent(appUrl)}`)}&name=${encodeURIComponent('운동기록')}`}
+              className="w-full h-12 bg-gradient-to-r from-[#2e6da4] to-[#1a5a8a] text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+            >
+              📲 단축어 앱으로 바로 설치
+            </a>
+            <a
+              href={`${appUrl}/api/shortcut?token=${profile.sync_token}&url=${encodeURIComponent(appUrl)}`}
+              className="w-full h-10 border border-gray-200 text-gray-500 rounded-xl text-xs font-medium flex items-center justify-center gap-1"
+            >
+              파일 직접 다운로드 (백업용)
+            </a>
+          </div>
         )}
         {!profile.sync_token && (
           <p className="text-xs text-gray-400 text-center">먼저 토큰을 생성하고 저장하세요</p>
@@ -321,12 +329,12 @@ export default function ProfilePage() {
 
         {shortcutGuideOpen && (
           <div className="bg-gray-50 rounded-xl p-3 space-y-3 text-xs text-gray-600">
-            <p className="font-semibold text-gray-700">단축어 설치 방법 (가장 쉬운 방법):</p>
+            <p className="font-semibold text-gray-700">단축어 설치 방법:</p>
             <ol className="space-y-2.5 list-decimal list-inside">
               <li>위에서 <span className="font-medium text-[#2e6da4]">토큰 생성 → 저장</span>을 먼저 완료하세요</li>
-              <li><span className="font-medium">📲 단축어 파일 다운로드</span> 버튼을 <span className="font-medium">iPhone Safari</span>에서 탭하세요
-                <br /><span className="text-gray-400 pl-4">→ &quot;단축어&quot;로 열기 선택 → 단축어 앱에 자동 추가</span></li>
-              <li>단축어 앱에서 <span className="font-medium">운동기록단축어</span> 확인 후 실행</li>
+              <li><span className="font-medium">📲 단축어 앱으로 바로 설치</span> 버튼을 탭하세요
+                <br /><span className="text-gray-400 pl-4">→ 단축어 앱이 열리며 &quot;단축어 추가&quot; 화면이 바로 표시됩니다</span></li>
+              <li><span className="font-medium">단축어 추가</span> 버튼을 탭해서 완료</li>
             </ol>
 
             <div className="border-t border-gray-200 pt-2 mt-1">
