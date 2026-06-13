@@ -8,9 +8,23 @@ export interface ChangelogEntry {
   items: string[]
 }
 
-export const CURRENT_VERSION = 'v1.11.0'
+export const CURRENT_VERSION = 'v1.12.0'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.12.0',
+    date: '2026-06-13 09:00',
+    type: 'feature',
+    title: 'iPhone 단축어 연동 — Apple Health 운동 자동 저장',
+    items: [
+      '프로필 페이지에 단축어 연동 섹션 추가',
+      '연동 토큰 생성/복사/재생성 기능',
+      'POST /api/sync-workout 엔드포인트 추가',
+      'Apple HealthKit 운동 유형(한국어/영어) 자동 매핑',
+      '운동 시작 시간 기준 시간대(아침/점심후/저녁후) 자동 분류',
+      '단축어 앱 설정 가이드 인앱 제공',
+    ],
+  },
   {
     version: 'v1.11.0',
     date: '2026-06-02 01:00',
