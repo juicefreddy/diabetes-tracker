@@ -95,6 +95,26 @@ export async function POST(req: NextRequest) {
 }
 
 // Health check
-export async function GET() {
-  return NextResponse.json({ status: 'ok', endpoint: 'sync-workout' })
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const token = searchParams.get('token')
+  const type = searchParams.get('type')
+  const duration_minutes = searchParams.get('duration_minutes')
+  const calories = searchParams.get('calories')
+  const date = searchParams.get('date')
+  const start_time = searchParams.get('start_time')
+  const avg_heart_rate = searchParams.get('avg_heart_rate')
+  const distance_km = searchParams.get('distance_km')
+
+  // If just a health check (no token), return status
+  if (!token && !type) {
+    return NextResponse.json({ status: 'ok', endpoint: 'sync-workout' })
+  }
+
+  // Process as sync request via GET
+  return POST(new NextRequest(req.url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, type, duration_minutes, calories, date, start_time, avg_heart_rate, distance_km }),
+  }))
 }
