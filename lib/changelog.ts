@@ -8,9 +8,21 @@ export interface ChangelogEntry {
   items: string[]
 }
 
-export const CURRENT_VERSION = 'v1.12.0'
+export const CURRENT_VERSION = 'v1.13.0'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.13.0',
+    date: '2026-06-13 13:00',
+    type: 'feature',
+    title: '단축어 파일 자동 생성 — Safari에서 바로 설치',
+    items: [
+      '프로필에서 "단축어 파일 다운로드" 버튼 → Safari로 열면 단축어 앱에 자동 추가',
+      '토큰과 API 주소가 미리 설정된 맞춤 단축어 파일 생성',
+      '단축어 실행: 운동 종류 선택 → 시간 → 칼로리 → 자동 저장',
+      '헬스 앱 연동 불필요, 헬스 메뉴 없어도 동작',
+    ],
+  },
   {
     version: 'v1.12.0',
     date: '2026-06-13 09:00',
