@@ -8,9 +8,21 @@ export interface ChangelogEntry {
   items: string[]
 }
 
-export const CURRENT_VERSION = 'v1.13.0'
+export const CURRENT_VERSION = 'v1.14.0'
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.14.0',
+    date: '2026-08-04 00:00',
+    type: 'feature',
+    title: '약·영양제 복용 관리',
+    items: [
+      '약·영양제 목록 등록 — 이름, 용량, 복용 시점(아침/점심/저녁/취침전) 설정',
+      '날짜별 복용 체크 — 시점별로 복용 여부 토글, 완료율 진행바 표시',
+      '약 비활성화 기능 — 일시 중단한 약은 체크 목록에서 숨김',
+      '하단 탭 네비게이션에 약·영양제 메뉴 추가',
+    ],
+  },
   {
     version: 'v1.13.0',
     date: '2026-06-13 13:00',
