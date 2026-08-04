@@ -70,6 +70,16 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    href: '/medications',
+    label: '약·영양제',
+    icon: (c: string) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m10.5 20.5-7-7a5 5 0 0 1 7.07-7.07l7 7a5 5 0 0 1-7.07 7.07z"/>
+        <line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/>
+      </svg>
+    ),
+  },
 ]
 
 export default function NavBar() {
